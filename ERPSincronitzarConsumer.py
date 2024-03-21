@@ -33,6 +33,7 @@ import threading
 
 # End points URLs
 URL_FAMILIES = '/productFamilies'
+URL_LOCATIONS = '/locations'
 URL_PRODUCTS = '/products'
 URL_FORMATS = '/formats'
 URL_COSTS = '/standardCosts'
@@ -66,6 +67,8 @@ URL_API = os.environ['URL_API_TEST']
 if ENVIRONMENT == 1:
     URL_API = os.environ['URL_API_PROD']
 
+####################################################################################################
+
 class RabbitPublisherService(threading.Thread):
 
     def __init__(self, rabbit_url: str, rabbit_port: str, queue_name: str):
@@ -81,6 +84,8 @@ class RabbitPublisherService(threading.Thread):
     def run(self):
         print ('starting thread to consume from rabbit ' + self.queue_name + ' ...')
         self.channel.start_consuming()        
+
+####################################################################################################
 
 def get_value_from_database(mycursor, correlation_id: str, url):
     mycursor.execute("SELECT erpGFId, hash FROM gfintranet.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = 'Mercaderies ERP GF' AND origin = 'Emmegi' AND correlationId = '" + str(correlation_id) + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
@@ -103,6 +108,8 @@ def update_value_from_database(dbOrigin, mycursor, correlation_id: str, erpGFId,
 def delete_value_from_database(dbOrigin, mycursor, correlation_id: str, url):
     mycursor.execute("DELETE FROM gfintranet.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = 'Mercaderies ERP GF' AND origin = 'Emmegi' AND correlationId = '" + str(correlation_id) + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
     dbOrigin.commit()
+
+####################################################################################################
 
 def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str, data: dict, filter_name: str = "", filter_value: str = ""):
     """
@@ -171,28 +178,87 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content))  
         return None, False
 
-def sync_families(dbOrigin, mycursor, headers, data: dict):
-    None
-
-def sync_projects(dbOrigin, mycursor, headers, data: dict):
-    None
-
-def sync_products(dbOrigin, mycursor, headers, data: dict):
-    None
-
-def sync_departaments(dbOrigin, mycursor, headers, data: dict):
-    None
-
-def sync_treballadors(dbOrigin, mycursor, headers, data: dict):
-    None
+####################################################################################################
 
 def sync_usuaris(dbOrigin, mycursor, headers, data: dict):
-    None
+    print ("usuari")
 
-def sync_products2(dbOrigin, mycursor, headers, data: dict):
+####################################################################################################
+
+def sync_departaments(dbOrigin, mycursor, headers, data: dict):
+    print ("department")
+
+def sync_treballadors(dbOrigin, mycursor, headers, data: dict):
+    print ("treballador")
+
+####################################################################################################
+
+def sync_families(dbOrigin, mycursor, headers, data: dict):
+    """
+    :param data: dict -> {
+        "companyId": GLAMSUITE_DEFAULT_COMPANY_ID,
+        "productTypeId": 1,                         # S'ha acordat internament que posarem tipus 'Material'.
+        "batchTraceabilityId": 1,                   # S'ha acordat internament que posarem tipus 'Batch'.
+        "batchSelectionCriteriaId": 1,              # S'ha acordat internament que posarem tipus 'FIFO'.        
+        "code": "02",
+        "name": "Good 01 Material",
+        "correlationId": "02"
+    }
+    :return None
+    """
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_FAMILIES, correlation_id=data['correlationId'], data=data, filter_name="name", filter_value=str(data['name']).strip())
+
+def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict):
+        """
+        Sincronitzem els projectes. A 11/22 només creem ubicacions.
+        :param data: dict -> {
+            "correlationId": "0523",
+            "containerCode": "0523",
+            "name": "Obra que hi ha a Brasil",
+            "zoneId": "123ABC",
+            "containerTypeId": "123ABC",
+            "aisle": "A",
+            "rack": "A",
+            "shelf": "A",
+            "position": "0523",
+            "preferential": False
+        }
+        :return: None
+        """
+        p_correlation_id = data['correlationId']
+        p_gf_description = data['description']
+        p_glam_id, nothing_to_do = synch_by_database(dbOrigin, mycursor, headers, url=URL_LOCATIONS, correlation_id=p_correlation_id,
+                                                     data=data, filter_name='code', filter_value=str(maskValue).strip())
+        if p_glam_id is None:  # Synchronization error.
+            return
+
+        # 11/22: Locations API Post don't allow description field.
+        # Let's synchronize it with the PUT request.
+        # We have to GET the element, compare it and modify it if needed.
+        try:
+            req = requests.get(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id), headers=headers,
+                               verify=False, timeout=CONN_TIMEOUT)
+            _glam_description = req.json()['description']
+        except Exception as err:
+            logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
+            return
+
+        if p_gf_description != _glam_description:
+            try:
+                put_data = {"description": p_gf_description, "preferential": False}
+                req = requests.put(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id),
+                                   data=json.dumps(put_data), headers=headers,
+                                   verify=False, timeout=CONN_TIMEOUT)
+                if req.status_code != 200:
+                    raise Exception('PUT with error')
+            except Exception as err:
+                logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
+        return
+
+def sync_products(dbOrigin, mycursor, headers, data: dict):
         """
         :param data: dict -> {
-            "correlationId": "02,
+            "correlationId": "02",
             "code": "02",
             "name": "Good 01 Material",
             "description": "Good 01 Material",
@@ -295,7 +361,7 @@ def sync_products2(dbOrigin, mycursor, headers, data: dict):
                         if req_post.status_code == 201:
                             update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url)
                         else:
-                            _sync_cost(dbOrigin, mycursor, headers, correlation_id,
+                            sync_cost(dbOrigin, mycursor, headers, correlation_id,
                                        post_product_costs_url, post_product_costs_data,
                                        post_product_cost_data_hash, _glam_product_id, product_cost, cost_glam_id)
                     else:
@@ -307,7 +373,7 @@ def sync_products2(dbOrigin, mycursor, headers, data: dict):
                             if req_put.status_code == 200:
                                 update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url)
                             else:
-                                _sync_cost(dbOrigin, mycursor, headers, correlation_id,
+                                sync_cost(dbOrigin, mycursor, headers, correlation_id,
                                            post_product_costs_url, post_product_costs_data,
                                            post_product_cost_data_hash, _glam_product_id, product_cost, cost_glam_id)
 
@@ -339,7 +405,7 @@ def sync_products2(dbOrigin, mycursor, headers, data: dict):
             except Exception as err:
                 logging.error('Error synch: ' + URL_PRODUCTS + ':' + correlation_id + " With error: " + str(err))
 
-def _sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, product_cost_data, product_cost_data_hash, product_glam_id, product_cost, cost_glam_id):
+def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, product_cost_data, product_cost_data_hash, product_glam_id, product_cost, cost_glam_id):
     # Obtain element to update
     req_get = requests.get(
         url=URL_API + URL_PRODUCTS + '/' + str(product_glam_id) + URL_COSTS,
@@ -373,6 +439,8 @@ def _sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pr
                 delete_value_from_database(dbOrigin, mycursor, correlation_id, product_cost_url)
             logging.error('Error processing Cost with url:' + product_cost_url)
 
+####################################################################################################
+            
 def synchronize_mercaderies(dbOrigin, mycursor, now):
     logging.info('   Syncronizing mercaderies...')
 
@@ -462,6 +530,8 @@ def synchronize_users(dbOrigin, mycursor, now):
         disconnectMySQL(dbOrigin)
         sys.exit(1)
 
+####################################################################################################
+        
 def main():
 
     executionResult = "OK"
@@ -486,6 +556,7 @@ def main():
         disconnectMySQL(dbOrigin)
         sys.exit(1)
 
+    # Executed as threads for performance reasons
     synchronize_mercaderies(dbOrigin, mycursor, now)
     synchronize_treballadors(dbOrigin, mycursor, now)
     synchronize_users(dbOrigin, mycursor, now)
