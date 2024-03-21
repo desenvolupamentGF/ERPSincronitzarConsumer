@@ -46,7 +46,9 @@ PIKA_PASSWORD = os.environ['PIKA_PASSWORD']
 
 RABBIT_URL = os.environ['RABBIT_URL']
 RABBIT_PORT = os.environ['RABBIT_PORT']
-RABBIT_NAME = os.environ['RABBIT_NAME']
+RABBIT_QUEUE_FAMILIES = os.environ['RABBIT_QUEUE_FAMILIES']
+RABBIT_QUEUE_PROJECTS = os.environ['RABBIT_QUEUE_PROJECTS']
+RABBIT_QUEUE_PRODUCTS = os.environ['RABBIT_QUEUE_PRODUCTS']
 
 MYSQL_USER = os.environ['MYSQL_USER']
 MYSQL_PASSWORD = os.environ['MYSQL_PASSWORD']
@@ -156,6 +158,15 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             'Error sync:' + key + '\n    json:' + json.dumps(data) +
             '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content))  
         return None, False
+
+def sync_families(dbOrigin, mycursor, headers, data: dict):
+    None
+
+def sync_projects(dbOrigin, mycursor, headers, data: dict):
+    None
+
+def sync_products2(dbOrigin, mycursor, headers, data: dict):
+    None
 
 def sync_products(dbOrigin, mycursor, headers, data: dict):
         """
@@ -341,31 +352,59 @@ def _sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pr
                 delete_value_from_database(dbOrigin, mycursor, correlation_id, product_cost_url)
             logging.error('Error processing Cost with url:' + product_cost_url)
 
-def synchronize_products(dbOrigin, mycursor, now):
-    logging.info('   Processing products from origin ERP (Emmegi)')
+def synchronize_queues(dbOrigin, mycursor, now):
+    logging.info('   Syncronizing queues...')
 
     try:
-        # Preparing message queue
-        myRabbitPublisherService = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_NAME)
+        # Preparing message queues
+        myRabbit_MERCADERIES_families = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE_FAMILIES)
+        myRabbit_MERCADERIES_projects = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE_PROJECTS)
+        myRabbit_MERCADERIES_products = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE_PRODUCTS)
 
-        def callback(ch, method, properties, body):
+        def callback_MERCADERIES_families(ch, method, properties, body):
             # Calculate access token and header for the request
             token = calculate_access_token(ENVIRONMENT)
             headers = calculate_json_header(token)
 
-            sync_products(dbOrigin, mycursor, headers,
+            sync_families(dbOrigin, mycursor, headers,
                 data=json.loads(body) # Faig un json.loads per convertir d'String a diccionari
             )
 
-        myRabbitPublisherService.channel.queue_declare(queue=myRabbitPublisherService.queue_name)
-        myRabbitPublisherService.channel.basic_consume(queue=myRabbitPublisherService.queue_name, on_message_callback=callback, auto_ack=True)
+        def callback_MERCADERIES_projects(ch, method, properties, body):
+            # Calculate access token and header for the request
+            token = calculate_access_token(ENVIRONMENT)
+            headers = calculate_json_header(token)
+
+            sync_projects(dbOrigin, mycursor, headers,
+                data=json.loads(body) # Faig un json.loads per convertir d'String a diccionari
+            )
+
+        def callback_MERCADERIES_products(ch, method, properties, body):
+            # Calculate access token and header for the request
+            token = calculate_access_token(ENVIRONMENT)
+            headers = calculate_json_header(token)
+
+            sync_products2(dbOrigin, mycursor, headers,
+                data=json.loads(body) # Faig un json.loads per convertir d'String a diccionari
+            )
+
+        myRabbit_MERCADERIES_families.channel.queue_declare(queue=myRabbit_MERCADERIES_families.queue_name)
+        myRabbit_MERCADERIES_families.channel.basic_consume(queue=myRabbit_MERCADERIES_families.queue_name, on_message_callback=callback_MERCADERIES_families, auto_ack=True)
+
+        myRabbit_MERCADERIES_projects.channel.queue_declare(queue=myRabbit_MERCADERIES_projects.queue_name)
+        myRabbit_MERCADERIES_projects.channel.basic_consume(queue=myRabbit_MERCADERIES_projects.queue_name, on_message_callback=callback_MERCADERIES_projects, auto_ack=True)
+
+        myRabbit_MERCADERIES_products.channel.queue_declare(queue=myRabbit_MERCADERIES_products.queue_name)
+        myRabbit_MERCADERIES_products.channel.basic_consume(queue=myRabbit_MERCADERIES_products.queue_name, on_message_callback=callback_MERCADERIES_products, auto_ack=True)
 
         print(' [*] Waiting for messages. To exit press CTRL+C')
-        myRabbitPublisherService.channel.start_consuming()
+        myRabbit_MERCADERIES_families.channel.start_consuming()
+        myRabbit_MERCADERIES_projects.channel.start_consuming()
+        myRabbit_MERCADERIES_products.channel.start_consuming()
 
     except Exception as e:
-        logging.error('   Unexpected error when processing products from original ERP (Emmegi): ' + str(e))
-        send_email("ERPMercaderiesConsumerMaintenance", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
+        logging.error('   Unexpected error processing queued messages: ' + str(e))
+        send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
         disconnectMySQL(dbOrigin)
         sys.exit(1)
 
@@ -377,28 +416,28 @@ def main():
     now = datetime.datetime.now() 
 
     # set up logging
-    logging.basicConfig(filename="log/ERPMercaderiesConsumerMaintenance.log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(filename="log/ERPSincronitzarConsumer.log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
-    logging.info('START ERP Mercaderies Maintenance - ENVIRONMENT: ' + str(ENVIRONMENT))
+    logging.info('START ERP Sincronitzar Consumer - ENVIRONMENT: ' + str(ENVIRONMENT))
     logging.info('   Connecting to database')
 
-    # connecting to origin database (EMMEGI - MySQL)
+    # connecting to sincro database (EMMEGI - MySQL)
     dbOrigin = None
     try:
         dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
         mycursor = dbOrigin.cursor()
     except Exception as e:
         logging.error('   Unexpected error when connecting to MySQL emmegi database: ' + str(e))
-        send_email("ERPMercaderiesConsumerMaintenance", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
+        send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
         disconnectMySQL(dbOrigin)
         sys.exit(1)
 
-    synchronize_products(dbOrigin, mycursor, now)    
+    synchronize_queues(dbOrigin, mycursor, now)    
 
     # Send email with execution summary
-    send_email("ERPMercaderiesConsumerMaintenance", ENVIRONMENT, now, datetime.datetime.now(), executionResult)
+    send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), executionResult)
 
-    logging.info('END ERP Mercaderies Maintenance - ENVIRONMENT: ' + str(ENVIRONMENT))
+    logging.info('END ERP Sincronitzar Consumer - ENVIRONMENT: ' + str(ENVIRONMENT))
     logging.info('')
 
     # Closing database
