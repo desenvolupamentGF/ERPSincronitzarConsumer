@@ -2,7 +2,7 @@
 import logging
 
 # To connect to MySQL databases
-import mysql.connector
+from mysql.connector.pooling import MySQLConnectionPool
 
 # To connect to SQLServer databases
 import pyodbc
@@ -114,7 +114,7 @@ def connectMySQL(user, password, host, database):
         "host": host,
         "database": database
     }
-    return mysql.connector.connect(pool_name = "mypool", pool_size = CONN_POOL, **dbconfig)            
+    return MySQLConnectionPool(pool_name = "mypool", pool_size = CONN_POOL, **dbconfig)            
        
 def disconnectMySQL(db):
     try:

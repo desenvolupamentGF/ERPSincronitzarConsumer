@@ -73,6 +73,7 @@ MYSQL_DATABASE = os.environ['MYSQL_DATABASE']
 
 # Other constants
 CONN_TIMEOUT = 50
+dbOrigin = None
 
 # Some global values
 glo_warehouse_location_mask = ""
@@ -886,11 +887,11 @@ def main():
     logging.info('START ERP Sincronitzar Consumer - ENVIRONMENT: ' + str(ENVIRONMENT))
     logging.info('   Connecting to database')
 
-    # connecting to sincro database (EMMEGI - MySQL)
+    # connecting to pool database (EMMEGI - MySQL)
+    global dbOrigin
     dbOrigin = None
     try:
         dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
-        mycursor = dbOrigin.cursor()
     except Exception as e:
         logging.error('   Unexpected error when connecting to MySQL emmegi database: ' + str(e))
         send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
@@ -901,9 +902,14 @@ def main():
     global_values()
 
     # Executed as threads for performance reasons
-    synchronize_mercaderies(dbOrigin, mycursor, now, "Mercaderies ERP GF", "Emmegi")
-    synchronize_treballadors(dbOrigin, mycursor, now, "Treballadors ERP GF", "Biostar")
-    synchronize_users(dbOrigin, mycursor, now, "Users ERP GF", "Biostar")
+    con = dbOrigin.get_connection()
+    synchronize_mercaderies(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi")
+
+    con = dbOrigin.get_connection()
+    synchronize_treballadors(con, con.cursor(), now, "Treballadors ERP GF", "Biostar")
+
+    con = dbOrigin.get_connection()
+    synchronize_users(con, con.cursor(), now, "Users ERP GF", "Biostar")
 
     while True: # infinite loop
         None
