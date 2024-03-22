@@ -34,6 +34,9 @@ EMAIL_USER_FROM = os.environ['EMAIL_USER_FROM']
 EMAIL_USER_TO = os.environ['EMAIL_USER_TO']
 EMAIL_PASS = os.environ['EMAIL_PASS']
 
+# Other constants
+CONN_POOL = 10
+
 # Function to generate token (not to call it directly --> externally use calculate_access_token below)
 def get_access_token(url, client_id, client_secret, grant_type, username, password, scope):
     data={
@@ -105,8 +108,13 @@ def send_email(subject, environment, startTime, endTime, executionResult):
     s.quit()
 
 def connectMySQL(user, password, host, database):
-    return mysql.connector.connect(user=user, password=password,
-                                   host=host, database=database)            
+    dbconfig = {
+        "user": user,
+        "password": password,
+        "host": host,
+        "database": database
+    }
+    return mysql.connector.connect(pool_name = "mypool", pool_size = CONN_POOL, **dbconfig)            
        
 def disconnectMySQL(db):
     try:
