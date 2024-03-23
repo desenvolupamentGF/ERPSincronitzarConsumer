@@ -876,8 +876,6 @@ def global_values():
         
 def main():
 
-    executionResult = "OK"
-
     # current date and time
     now = datetime.datetime.now() 
 
@@ -903,28 +901,22 @@ def main():
 
     # Executed as threads for performance reasons
     con = dbOrigin.get_connection()
-    synchronize_mercaderies(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi")
+    synchronize_mercaderies(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi") # First of three threads to thousands of products
 
     con = dbOrigin.get_connection()
-    synchronize_treballadors(con, con.cursor(), now, "Treballadors ERP GF", "Biostar")
+    synchronize_mercaderies(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi") # ¨Second of three threads to thousands of products
 
     con = dbOrigin.get_connection()
-    synchronize_users(con, con.cursor(), now, "Users ERP GF", "Biostar")
+    synchronize_mercaderies(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi") # Third of three threads to thousands of products
+
+    con = dbOrigin.get_connection()
+    synchronize_treballadors(con, con.cursor(), now, "Treballadors ERP GF", "Biostar") # One thread is enough for workers
+
+    con = dbOrigin.get_connection()
+    synchronize_users(con, con.cursor(), now, "Users ERP GF", "Biostar") # One thread is enough for users
 
     while True: # infinite loop
         None
-
-    # Send email with execution summary
-    send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), executionResult)
-
-    logging.info('END ERP Sincronitzar Consumer - ENVIRONMENT: ' + str(ENVIRONMENT))
-    logging.info('')
-
-    # Closing database
-    mycursor.close()
-    dbOrigin.close()
-
-    sys.exit(0)
 
     #logging.debug('debug message')
     #logging.info('info message')
