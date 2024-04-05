@@ -880,7 +880,7 @@ def main():
     now = datetime.datetime.now() 
 
     # set up logging
-    logging.basicConfig(filename="log/ERPSincronitzarConsumer.log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(filename=os.environ['LOG_FILE'], level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
     logging.info('START ERP Sincronitzar Consumer - ENVIRONMENT: ' + str(ENVIRONMENT))
     logging.info('   Connecting to database')
