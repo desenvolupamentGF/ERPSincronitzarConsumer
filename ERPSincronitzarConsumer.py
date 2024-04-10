@@ -1,7 +1,7 @@
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
-ENVIRONMENT = 0
+ENVIRONMENT = 1
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
@@ -163,7 +163,8 @@ class RabbitPublisherService(threading.Thread):
         self.rabbit_port = rabbit_port
         self.queue_name = queue_name
         credentials = pika.PlainCredentials(PIKA_USER, PIKA_PASSWORD)
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbit_url, port=self.rabbit_port, credentials=credentials))
+        #self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbit_url, port=self.rabbit_port, credentials=credentials))
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbit_url, port=self.rabbit_port))
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue=self.queue_name)
 
