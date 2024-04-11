@@ -707,21 +707,18 @@ def synchronize_mercaderies(dbOrigin, mycursor, now, endPoint, origin):
 
         def callback_MERCADERIES(ch, method, properties, body):
             # Calculate access token and header for the request
-            #token = calculate_access_token(ENVIRONMENT)
-            #headers = calculate_json_header(token)
+            token = calculate_access_token(ENVIRONMENT)
+            headers = calculate_json_header(token)
 
             data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
 
             if data['queueType'] == "MERCADERIES_FAMILIES":
-                #sync_families(dbOrigin, mycursor, headers, data, endPoint, origin)
-                None
+                sync_families(dbOrigin, mycursor, headers, data, endPoint, origin)
             if data['queueType'] == "MERCADERIES_PROJECTES":
-                #maskValue = calculate_mask_value(glo_warehouse_location_mask, glo_zone_code, glo_warehouse_code, glo_plant_code, glo_geolocation_code, glo_aisle_code, glo_rack_code, glo_shelf_code, str(data['correlationId']).strip())
-                #sync_projects(dbOrigin, mycursor, headers, maskValue, data, endPoint, origin)
-                None
+                maskValue = calculate_mask_value(glo_warehouse_location_mask, glo_zone_code, glo_warehouse_code, glo_plant_code, glo_geolocation_code, glo_aisle_code, glo_rack_code, glo_shelf_code, str(data['correlationId']).strip())
+                sync_projects(dbOrigin, mycursor, headers, maskValue, data, endPoint, origin)
             if data['queueType'] == "MERCADERIES_PRODUCTES":
-                #sync_products(dbOrigin, mycursor, headers, data, endPoint, origin)
-                None
+                sync_products(dbOrigin, mycursor, headers, data, endPoint, origin)
 
         myRabbit_MERCADERIES.channel.queue_declare(queue=myRabbit_MERCADERIES.queue_name)
         myRabbit_MERCADERIES.channel.basic_consume(queue=myRabbit_MERCADERIES.queue_name, on_message_callback=callback_MERCADERIES, auto_ack=True)
@@ -742,18 +739,16 @@ def synchronize_treballadors(dbOrigin, mycursor, now, endPoint, origin):
 
         def callback_TREBALLADORS(ch, method, properties, body):
             # Calculate access token and header for the request
-            #token = calculate_access_token(ENVIRONMENT)
-            #headers = calculate_json_header(token)
+            token = calculate_access_token(ENVIRONMENT)
+            headers = calculate_json_header(token)
 
             data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
 
             if data['queueType'] == "TREBALLADORS_DEPARTAMENTS":
-                #sync_departaments(dbOrigin, mycursor, headers, data, endPoint, origin)
-                None
+                sync_departaments(dbOrigin, mycursor, headers, data, endPoint, origin)
             if data['queueType'] == "TREBALLADORS_TREBALLADORS":
-                #maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
-                #sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, endPoint, origin)
-                None
+                maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
+                sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, endPoint, origin)
 
         myRabbit_TREBALLADORS.channel.queue_declare(queue=myRabbit_TREBALLADORS.queue_name)
         myRabbit_TREBALLADORS.channel.basic_consume(queue=myRabbit_TREBALLADORS.queue_name, on_message_callback=callback_TREBALLADORS, auto_ack=True)
@@ -774,14 +769,13 @@ def synchronize_users(dbOrigin, mycursor, now, endPoint, origin):
 
         def callback_USERS(ch, method, properties, body):
             # Calculate access token and header for the request
-            #token = calculate_access_token(ENVIRONMENT)
-            #headers = calculate_json_header(token)
+            token = calculate_access_token(ENVIRONMENT)
+            headers = calculate_json_header(token)
 
             data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
 
             if data['queueType'] == "USERS_USERS":
-                #sync_usuaris(dbOrigin, mycursor, headers, data, endPoint, origin)
-                None
+                sync_usuaris(dbOrigin, mycursor, headers, data, endPoint, origin)
 
         myRabbit_USERS.channel.queue_declare(queue=myRabbit_USERS.queue_name)
         myRabbit_USERS.channel.basic_consume(queue=myRabbit_USERS.queue_name, on_message_callback=callback_USERS, auto_ack=True)
