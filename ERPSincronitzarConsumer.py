@@ -467,7 +467,6 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
     Sincronitzem els projectes. A 11/22 només creem ubicacions.
     :param data: dict -> {
         "correlationId": "0523",
-        "containerCode": "0523",
         "name": "Obra que hi ha a Brasil",
         "zoneId": "123ABC",
         "containerTypeId": "123ABC",
