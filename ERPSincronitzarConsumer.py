@@ -60,10 +60,7 @@ PIKA_PASSWORD = os.environ['PIKA_PASSWORD']
 
 RABBIT_URL = os.environ['RABBIT_URL']
 RABBIT_PORT = os.environ['RABBIT_PORT']
-
-RABBIT_QUEUE_MERCADERIES = os.environ['RABBIT_QUEUE_MERCADERIES']
-RABBIT_QUEUE_TREBALLADORS = os.environ['RABBIT_QUEUE_TREBALLADORS']
-RABBIT_QUEUE_USERS = os.environ['RABBIT_QUEUE_USERS']
+RABBIT_QUEUE = os.environ['RABBIT_QUEUE']
 
 # Database constants
 MYSQL_USER = os.environ['MYSQL_USER']
@@ -175,7 +172,7 @@ class RabbitPublisherService(threading.Thread):
 ####################################################################################################
 
 def get_value_from_database(mycursor, correlation_id: str, url, endPoint, origin):
-    mycursor.execute("SELECT erpGFId, hash FROM gfintranet.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) + "' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id) + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
+    mycursor.execute("SELECT erpGFId, hash FROM gfintranet.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) + "' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id).replace("'", "''") + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
     myresult = mycursor.fetchall()
 
     erpGFId = None
@@ -193,7 +190,7 @@ def update_value_from_database(dbOrigin, mycursor, correlation_id: str, erpGFId,
     dbOrigin.commit()    
 
 def delete_value_from_database(dbOrigin, mycursor, correlation_id: str, url, endPoint, origin):
-    mycursor.execute("DELETE FROM gfintranet.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) +"' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id) + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
+    mycursor.execute("DELETE FROM gfintranet.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) +"' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id).replace("'", "''") + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
     dbOrigin.commit()
 
 ####################################################################################################
@@ -230,7 +227,10 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
         return glam_id, False
 
     if req.status_code in [200, 201]:  # POST or PUT success 
-        p_glam_id = req.json()['id']
+        if endPoint == "Users ERP GF": # This endpoint is not returning "id" as the others
+            p_glam_id = req.json()['userName']
+        else:
+            p_glam_id = req.json()['id']
         update_value_from_database(dbOrigin, mycursor, correlation_id, p_glam_id, str(data_hash), url, endPoint, origin)
         return p_glam_id, True
     elif req.status_code == 204:
@@ -350,7 +350,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         "startDate": "2024-02-22T12:38:41.440Z",
         "endDate": "2024-02-22T12:38:41.440Z",
         "departmentId": departmentId,
-        "workforceId": "94c235b7-6bf6-4b53-dbea-08dc38fce85d",
+        "workforceId": "",
         "workingHours": 40,
         "correlationId": "533"
     }
@@ -549,22 +549,8 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
         4. Obsolete
     """
 
-    if data['familyCorrelationId'] is None or str(data['familyCorrelationId']) == "0":
-        logging.info('      ********** FAMILIA 0 **********')
-        return
-
     correlation_id = data['correlationId']
-    family_correlation_id = str(data['familyCorrelationId']).strip()
     format_correlation_id = str(data['formats'][0]['formatCorrelationId']).strip()  # Donant per suposat que hi haurà mínim un.
-
-    # Get Glam Family id.
-    glam_family_id, nothing_to_do = get_value_from_database(mycursor, correlation_id=family_correlation_id, url=URL_FAMILIES, endPoint=endPoint, origin=origin)
-    if glam_family_id is None:
-        logging.error('Error sync:' + URL_PRODUCTS + ":" + correlation_id + 
-                      " Missing product family: " + URL_FAMILIES + ":" + family_correlation_id)
-        return
-
-    data["familyId"] = glam_family_id
 
     # Synchronize product.
     _glam_product_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTS, correlation_id=data['correlationId'], data=data, filter_name="code", filter_value=data['code'], endPoint=endPoint, origin=origin)
@@ -702,7 +688,7 @@ def synchronize_mercaderies(dbOrigin, mycursor, now, endPoint, origin):
 
     try:
         # Preparing message queue
-        myRabbit_MERCADERIES = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE_MERCADERIES)
+        myRabbit_MERCADERIES = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
 
         def callback_MERCADERIES(ch, method, properties, body):
             # Calculate access token and header for the request
@@ -734,7 +720,7 @@ def synchronize_treballadors(dbOrigin, mycursor, now, endPoint, origin):
 
     try:
         # Preparing message queue
-        myRabbit_TREBALLADORS = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE_TREBALLADORS)
+        myRabbit_TREBALLADORS = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
 
         def callback_TREBALLADORS(ch, method, properties, body):
             # Calculate access token and header for the request
@@ -764,7 +750,7 @@ def synchronize_users(dbOrigin, mycursor, now, endPoint, origin):
 
     try:
         # Preparing message queue
-        myRabbit_USERS = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE_USERS)
+        myRabbit_USERS = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
 
         def callback_USERS(ch, method, properties, body):
             # Calculate access token and header for the request
