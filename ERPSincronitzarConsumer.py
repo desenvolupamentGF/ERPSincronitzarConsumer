@@ -826,7 +826,9 @@ def main():
         except Exception as e:
             logging.error('   Unexpected error processing queued messages: ' + str(e))
             send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
-            time.sleep(60) # 1 minute sleep to retry re-connecting to database and rabbit and then continue
+
+            logging.error('   Sleeping 60 seconds to reconnect with database and rabbit queues and retry...')
+            time.sleep(60) # 1 minute sleep to retry re-connecting to database and rabbit queus and then continue
             dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
             mycursor = dbOrigin.cursor()        
             myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
