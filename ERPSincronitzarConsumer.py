@@ -21,15 +21,13 @@ import pika
 # extra imports
 import sys
 import datetime
+import time
 from utils import send_email, connectMySQL, disconnectMySQL
 from utils import calculate_access_token, calculate_json_header
 import os
 
 # Import needed library for HTTP requests
 import requests
-
-# To have multi threads
-import threading
 
 # End points URLs
 URL_FAMILIES = '/productFamilies'
@@ -70,7 +68,6 @@ MYSQL_DATABASE = os.environ['MYSQL_DATABASE']
 
 # Other constants
 CONN_TIMEOUT = 50
-dbOrigin = None
 
 # Some global values
 glo_warehouse_location_mask = ""
@@ -152,10 +149,9 @@ def calculate_mask_value(warehouse_location_mask, zone_code, warehouse_code, pla
 
 ####################################################################################################
 
-class RabbitPublisherService(threading.Thread):
+class RabbitPublisherService():
 
     def __init__(self, rabbit_url: str, rabbit_port: str, queue_name: str):
-        threading.Thread.__init__(self)
         self.rabbit_url = rabbit_url
         self.rabbit_port = rabbit_port
         self.queue_name = queue_name
@@ -163,11 +159,6 @@ class RabbitPublisherService(threading.Thread):
         #self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbit_url, port=self.rabbit_port, credentials=credentials))
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbit_url, port=self.rabbit_port))
         self.channel = self.connection.channel()
-        self.channel.queue_declare(queue=self.queue_name)
-
-    def run(self):
-        print ('starting thread to consume from rabbit ' + self.queue_name + ' ...')
-        self.channel.start_consuming()        
 
 ####################################################################################################
 
@@ -683,97 +674,6 @@ def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pro
 
 ####################################################################################################
             
-def synchronize_mercaderies(dbOrigin, mycursor, now, endPoint, origin):
-    logging.info('   Syncronizing mercaderies...')
-
-    try:
-        # Preparing message queue
-        myRabbit_MERCADERIES = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
-
-        def callback_MERCADERIES(ch, method, properties, body):
-            # Calculate access token and header for the request
-            token = calculate_access_token(ENVIRONMENT)
-            headers = calculate_json_header(token)
-
-            data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
-
-            if data['queueType'] == "MERCADERIES_FAMILIES":
-                sync_families(dbOrigin, mycursor, headers, data, endPoint, origin)
-            if data['queueType'] == "MERCADERIES_PROJECTES":
-                maskValue = calculate_mask_value(glo_warehouse_location_mask, glo_zone_code, glo_warehouse_code, glo_plant_code, glo_geolocation_code, glo_aisle_code, glo_rack_code, glo_shelf_code, str(data['correlationId']).strip())
-                sync_projects(dbOrigin, mycursor, headers, maskValue, data, endPoint, origin)
-            if data['queueType'] == "MERCADERIES_PRODUCTES":
-                sync_products(dbOrigin, mycursor, headers, data, endPoint, origin)
-
-        myRabbit_MERCADERIES.channel.queue_declare(queue=myRabbit_MERCADERIES.queue_name)
-        myRabbit_MERCADERIES.channel.basic_consume(queue=myRabbit_MERCADERIES.queue_name, on_message_callback=callback_MERCADERIES, auto_ack=True)
-        myRabbit_MERCADERIES.start()
-
-    except Exception as e:
-        logging.error('   Unexpected error processing queued mercaderies: ' + str(e))
-        send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
-        disconnectMySQL(dbOrigin)
-        sys.exit(1)
-
-def synchronize_treballadors(dbOrigin, mycursor, now, endPoint, origin):
-    logging.info('   Syncronizing treballadors...')
-
-    try:
-        # Preparing message queue
-        myRabbit_TREBALLADORS = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
-
-        def callback_TREBALLADORS(ch, method, properties, body):
-            # Calculate access token and header for the request
-            token = calculate_access_token(ENVIRONMENT)
-            headers = calculate_json_header(token)
-
-            data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
-
-            if data['queueType'] == "TREBALLADORS_DEPARTAMENTS":
-                sync_departaments(dbOrigin, mycursor, headers, data, endPoint, origin)
-            if data['queueType'] == "TREBALLADORS_TREBALLADORS":
-                maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
-                sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, endPoint, origin)
-
-        myRabbit_TREBALLADORS.channel.queue_declare(queue=myRabbit_TREBALLADORS.queue_name)
-        myRabbit_TREBALLADORS.channel.basic_consume(queue=myRabbit_TREBALLADORS.queue_name, on_message_callback=callback_TREBALLADORS, auto_ack=True)
-        myRabbit_TREBALLADORS.start()
-
-    except Exception as e:
-        logging.error('   Unexpected error processing queued treballadors: ' + str(e))
-        send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
-        disconnectMySQL(dbOrigin)
-        sys.exit(1)
-
-def synchronize_users(dbOrigin, mycursor, now, endPoint, origin):
-    logging.info('   Syncronizing users...')
-
-    try:
-        # Preparing message queue
-        myRabbit_USERS = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
-
-        def callback_USERS(ch, method, properties, body):
-            # Calculate access token and header for the request
-            token = calculate_access_token(ENVIRONMENT)
-            headers = calculate_json_header(token)
-
-            data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
-
-            if data['queueType'] == "USERS_USERS":
-                sync_usuaris(dbOrigin, mycursor, headers, data, endPoint, origin)
-
-        myRabbit_USERS.channel.queue_declare(queue=myRabbit_USERS.queue_name)
-        myRabbit_USERS.channel.basic_consume(queue=myRabbit_USERS.queue_name, on_message_callback=callback_USERS, auto_ack=True)
-        myRabbit_USERS.start()
-
-    except Exception as e:
-        logging.error('   Unexpected error processing queued users: ' + str(e))
-        send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
-        disconnectMySQL(dbOrigin)
-        sys.exit(1)
-
-####################################################################################################
-
 def global_values():
     # Calculate access token and header for the request
     token = calculate_access_token(ENVIRONMENT)
@@ -871,11 +771,11 @@ def main():
     logging.info('START ERP Sincronitzar Consumer - ENVIRONMENT: ' + str(ENVIRONMENT))
     logging.info('   Connecting to database')
 
-    # connecting to pool database (EMMEGI - MySQL)
-    global dbOrigin
+    # connecting to database (EMMEGI - MySQL)
     dbOrigin = None
     try:
         dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
+        mycursor = dbOrigin.cursor()        
     except Exception as e:
         logging.error('   Unexpected error when connecting to MySQL emmegi database: ' + str(e))
         send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
@@ -885,30 +785,46 @@ def main():
     # Populate some global values
     global_values()
 
-    # Executed as threads for performance reasons
-
-    con = dbOrigin.get_connection()
-    thread = threading.Thread(target=synchronize_mercaderies, args=(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi")) # First of three threads to thousands of products
-    thread.start()
-
-    con = dbOrigin.get_connection()
-    thread = threading.Thread(target=synchronize_mercaderies, args=(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi")) # ¨Second of three threads to thousands of products
-    thread.start()
-
-    con = dbOrigin.get_connection()
-    thread = threading.Thread(target=synchronize_mercaderies, args=(con, con.cursor(), now, "Mercaderies ERP GF", "Emmegi")) # Third of three threads to thousands of products
-    thread.start()
-
-    con = dbOrigin.get_connection()
-    thread = threading.Thread(target=synchronize_treballadors, args=(con, con.cursor(), now, "Treballadors ERP GF", "Biostar")) # One thread is enough for workers
-    thread.start()
-
-    con = dbOrigin.get_connection()
-    thread = threading.Thread(target=synchronize_users, args=(con, con.cursor(), now, "Users ERP GF", "Emmegi")) # One thread is enough for users
-    thread.start()
+    # Preparing message queue
+    myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
 
     while True: # infinite loop
-        None
+
+        try:
+
+            def callback_message(ch, method, properties, body):
+                # Calculate access token and header for the request
+                token = calculate_access_token(ENVIRONMENT)
+                headers = calculate_json_header(token)
+
+                data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
+
+                if data['queueType'] == "MERCADERIES_FAMILIES":
+                    sync_families(dbOrigin, mycursor, headers, data, 'Mercaderies ERP GF', 'Emmegi')
+                if data['queueType'] == "MERCADERIES_PROJECTES":
+                    maskValue = calculate_mask_value(glo_warehouse_location_mask, glo_zone_code, glo_warehouse_code, glo_plant_code, glo_geolocation_code, glo_aisle_code, glo_rack_code, glo_shelf_code, str(data['correlationId']).strip())
+                    sync_projects(dbOrigin, mycursor, headers, maskValue, data, 'Mercaderies ERP GF', 'Emmegi')
+                if data['queueType'] == "MERCADERIES_PRODUCTES":
+                    sync_products(dbOrigin, mycursor, headers, data, 'Mercaderies ERP GF', 'Emmegi')
+                if data['queueType'] == "TREBALLADORS_DEPARTAMENTS":
+                    sync_departaments(dbOrigin, mycursor, headers, data, 'Treballadors ERP GF', 'Biostar')
+                if data['queueType'] == "TREBALLADORS_TREBALLADORS":
+                    maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
+                    sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, 'Treballadors ERP GF', 'Biostar')
+                if data['queueType'] == "USERS_USERS":
+                    sync_usuaris(dbOrigin, mycursor, headers, data, 'Users ERP GF', 'Emmegi')
+
+            myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
+            myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
+            myRabbit.channel.start_consuming()
+        
+        except Exception as e:
+            logging.error('   Unexpected error processing queued messages: ' + str(e))
+            send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
+            time.sleep(60) # 1 minute sleep to retry re-connecting to database and rabbit and then continue
+            dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
+            mycursor = dbOrigin.cursor()        
+            myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
 
     #logging.debug('debug message')
     #logging.info('info message')
