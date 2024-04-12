@@ -799,6 +799,7 @@ def main():
 
                 data = json.loads(body) # Faig un json.loads per convertir d'String a diccionari
 
+                # Mercaderies
                 if data['queueType'] == "MERCADERIES_FAMILIES":
                     sync_families(dbOrigin, mycursor, headers, data, 'Mercaderies ERP GF', 'Emmegi')
                 if data['queueType'] == "MERCADERIES_PROJECTES":
@@ -806,11 +807,15 @@ def main():
                     sync_projects(dbOrigin, mycursor, headers, maskValue, data, 'Mercaderies ERP GF', 'Emmegi')
                 if data['queueType'] == "MERCADERIES_PRODUCTES":
                     sync_products(dbOrigin, mycursor, headers, data, 'Mercaderies ERP GF', 'Emmegi')
+
+                # Treballadors
                 if data['queueType'] == "TREBALLADORS_DEPARTAMENTS":
                     sync_departaments(dbOrigin, mycursor, headers, data, 'Treballadors ERP GF', 'Biostar')
                 if data['queueType'] == "TREBALLADORS_TREBALLADORS":
                     maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
                     sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, 'Treballadors ERP GF', 'Biostar')
+                
+                # Usuaris
                 if data['queueType'] == "USERS_USERS":
                     sync_usuaris(dbOrigin, mycursor, headers, data, 'Users ERP GF', 'Emmegi')
 
