@@ -679,84 +679,79 @@ def global_values():
     token = calculate_access_token(ENVIRONMENT)
     headers = calculate_json_header(token)
 
-    try:
-        # Zone data
-        req = requests.get(URL_API + URL_ZONES + '/' + GLAMSUITE_DEFAULT_ZONE_ID, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_zone_code 
-        glo_zone_code = req.json()['code']
-        warehouse_id = req.json()['warehouseId']
+    # Zone data
+    req = requests.get(URL_API + URL_ZONES + '/' + GLAMSUITE_DEFAULT_ZONE_ID, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_zone_code 
+    glo_zone_code = req.json()['code']
+    warehouse_id = req.json()['warehouseId']
 
-        # Warehouse data
-        req = requests.get(URL_API + URL_WAREHOUSES + '/' + warehouse_id, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_warehouse_code
-        glo_warehouse_code = req.json()['code']
-        global glo_warehouse_location_mask
-        glo_warehouse_location_mask = req.json()['locationMask']
-        plant_id = req.json()['plantId']
+    # Warehouse data
+    req = requests.get(URL_API + URL_WAREHOUSES + '/' + warehouse_id, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_warehouse_code
+    glo_warehouse_code = req.json()['code']
+    global glo_warehouse_location_mask
+    glo_warehouse_location_mask = req.json()['locationMask']
+    plant_id = req.json()['plantId']
 
-        # Plant data
-        req = requests.get(URL_API + URL_PLANTS + '/' + plant_id, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_plant_code
-        glo_plant_code = req.json()['code']
-        geolocation_id = req.json()['geolocationId']
+    # Plant data
+    req = requests.get(URL_API + URL_PLANTS + '/' + plant_id, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_plant_code
+    glo_plant_code = req.json()['code']
+    geolocation_id = req.json()['geolocationId']
 
-        # Geolocation data
-        req = requests.get(URL_API + URL_GEOLOCATIONS + '/' + geolocation_id, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_geolocation_code
-        glo_geolocation_code = req.json()['code']
+    # Geolocation data
+    req = requests.get(URL_API + URL_GEOLOCATIONS + '/' + geolocation_id, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_geolocation_code
+    glo_geolocation_code = req.json()['code']
 
-        # Aisle, rack, shelf
-        global glo_aisle_code
-        glo_aisle_code = "A"
-        global glo_rack_code
-        glo_rack_code = "A"
-        global glo_shelf_code
-        glo_shelf_code = "A"
+    # Aisle, rack, shelf
+    global glo_aisle_code
+    glo_aisle_code = "A"
+    global glo_rack_code
+    glo_rack_code = "A"
+    global glo_shelf_code
+    glo_shelf_code = "A"
 
-        # Zone EPI data
-        req = requests.get(URL_API + URL_ZONES + '/' + GLAMSUITE_DEFAULT_ZONE_EPI_ID, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_zone_code_epi 
-        glo_zone_code_epi = req.json()['code']
-        warehouse_id = req.json()['warehouseId']
+    # Zone EPI data
+    req = requests.get(URL_API + URL_ZONES + '/' + GLAMSUITE_DEFAULT_ZONE_EPI_ID, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_zone_code_epi 
+    glo_zone_code_epi = req.json()['code']
+    warehouse_id = req.json()['warehouseId']
 
-        # Warehouse data
-        req = requests.get(URL_API + URL_WAREHOUSES + '/' + warehouse_id, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_warehouse_code_epi
-        glo_warehouse_code_epi = req.json()['code']
-        global glo_warehouse_location_mask_epi
-        glo_warehouse_location_mask_epi = req.json()['locationMask']
-        plant_id = req.json()['plantId']
+    # Warehouse data
+    req = requests.get(URL_API + URL_WAREHOUSES + '/' + warehouse_id, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_warehouse_code_epi
+    glo_warehouse_code_epi = req.json()['code']
+    global glo_warehouse_location_mask_epi
+    glo_warehouse_location_mask_epi = req.json()['locationMask']
+    plant_id = req.json()['plantId']
 
-        # Plant data
-        req = requests.get(URL_API + URL_PLANTS + '/' + plant_id, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_plant_code_epi
-        glo_plant_code_epi = req.json()['code']
-        geolocation_id = req.json()['geolocationId']
+    # Plant data
+    req = requests.get(URL_API + URL_PLANTS + '/' + plant_id, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_plant_code_epi
+    glo_plant_code_epi = req.json()['code']
+    geolocation_id = req.json()['geolocationId']
 
-        # Geolocation data
-        req = requests.get(URL_API + URL_GEOLOCATIONS + '/' + geolocation_id, headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        global glo_geolocation_code_epi
-        glo_geolocation_code_epi = req.json()['code']
+    # Geolocation data
+    req = requests.get(URL_API + URL_GEOLOCATIONS + '/' + geolocation_id, headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    global glo_geolocation_code_epi
+    glo_geolocation_code_epi = req.json()['code']
 
-        # Aisle, rack, shelf
-        global glo_aisle_code_epi
-        glo_aisle_code_epi = "A"
-        global glo_rack_code_epi
-        glo_rack_code_epi = "A"
-        global glo_shelf_code_epi
-        glo_shelf_code_epi = "A"
-
-    except Exception as err:
-        logging.error('Error calculating mask value for zone:' + GLAMSUITE_DEFAULT_ZONE_ID + " With error: " + str(err))
-        return
+    # Aisle, rack, shelf
+    global glo_aisle_code_epi
+    glo_aisle_code_epi = "A"
+    global glo_rack_code_epi
+    glo_rack_code_epi = "A"
+    global glo_shelf_code_epi
+    glo_shelf_code_epi = "A"
 
 ####################################################################################################
         
@@ -782,8 +777,14 @@ def main():
         disconnectMySQL(dbOrigin)
         sys.exit(1)
         
-    # Populate some global values
-    global_values()
+    try:
+        # Populate some global values
+        global_values()
+    except Exception as e:
+        logging.error('   Unexpected error calculating global values: ' + str(e))
+        send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
+        disconnectMySQL(dbOrigin)
+        sys.exit(1)
 
     # Preparing message queue
     myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
@@ -838,7 +839,7 @@ def main():
                     myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
                     reconnect = True
                 except Exception as e:
-                    logging.error('   Unexpected error: ' + str(e))
+                    logging.error('   Unexpected error reconnecting to database&rabbit: ' + str(e))
 
     #logging.debug('debug message')
     #logging.info('info message')
