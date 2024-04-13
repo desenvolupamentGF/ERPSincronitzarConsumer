@@ -827,11 +827,18 @@ def main():
             logging.error('   Unexpected error processing queued messages: ' + str(e))
             send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
 
-            logging.error('   Sleeping 60 seconds to reconnect with database and rabbit queues and retry...')
-            time.sleep(60) 
-            dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
-            mycursor = dbOrigin.cursor()        
-            myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
+            reconnect = False
+            while not reconnect:
+                logging.error('   Sleeping 60 seconds to reconnect with database&rabbit and retry...')
+                time.sleep(60) 
+            
+                try:
+                    dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
+                    mycursor = dbOrigin.cursor()        
+                    myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
+                    reconnect = True
+                except Exception as e:
+                    logging.error('   Unexpected error: ' + str(e))
 
     #logging.debug('debug message')
     #logging.info('info message')
