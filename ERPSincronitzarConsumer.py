@@ -52,10 +52,7 @@ GLAMSUITE_DEFAULT_CONTAINER_TYPE_ID = os.environ['GLAMSUITE_DEFAULT_CONTAINER_TY
 
 GLAMSUITE_DEFAULT_ZONE_EPI_ID = os.environ['GLAMSUITE_DEFAULT_ZONE_EPI_ID']
 
-# Pika and rabbit constants for messaging
-PIKA_USER = os.environ['PIKA_USER']
-PIKA_PASSWORD = os.environ['PIKA_PASSWORD']
-
+# Rabbit constants for messaging
 RABBIT_URL = os.environ['RABBIT_URL']
 RABBIT_PORT = os.environ['RABBIT_PORT']
 RABBIT_QUEUE = os.environ['RABBIT_QUEUE']
@@ -155,8 +152,6 @@ class RabbitPublisherService():
         self.rabbit_url = rabbit_url
         self.rabbit_port = rabbit_port
         self.queue_name = queue_name
-        credentials = pika.PlainCredentials(PIKA_USER, PIKA_PASSWORD)
-        #self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbit_url, port=self.rabbit_port, credentials=credentials))
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbit_url, port=self.rabbit_port))
         self.channel = self.connection.channel()
 
@@ -838,6 +833,8 @@ def main():
                     mycursor = dbOrigin.cursor()        
                     myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
                     reconnect = True
+                    logging.error('   Successfully reconnected. Execution continues...')
+                    send_email("ERPSincronitzarConsumer - SUCCESSFULLY RECONNECTED", ENVIRONMENT, now, datetime.datetime.now(), "OK")  
                 except Exception as e:
                     logging.error('   Unexpected error reconnecting to database&rabbit: ' + str(e))
 
