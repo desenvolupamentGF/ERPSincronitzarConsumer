@@ -345,7 +345,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
     :return None
     """
 
-    dataAux = data # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
+    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
 
     # We need the GUID for the nationality
     get_req = requests.get(URL_API + URL_COUNTRIES + f"?search={data['nationality']}", headers=headers,
