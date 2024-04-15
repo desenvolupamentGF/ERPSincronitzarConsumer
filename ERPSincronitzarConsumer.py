@@ -45,6 +45,8 @@ URL_WAREHOUSES = '/warehouses'
 URL_PLANTS = '/plants'
 URL_GEOLOCATIONS = '/geolocations'
 
+URL_COUNTRIES = '/countries'
+
 # Glam Suite constants
 GLAMSUITE_DEFAULT_COMPANY_ID = os.environ['GLAMSUITE_DEFAULT_COMPANY_ID']
 GLAMSUITE_DEFAULT_ZONE_ID = os.environ['GLAMSUITE_DEFAULT_ZONE_ID']
@@ -312,14 +314,14 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
     :param data: dict -> {
         "name": "ARCOS ESPINOSA JESUS",
         "companyId": GLAMSUITE_DEFAULT_COMPANY_ID,
-        "nationality": "54333adb-6544-4f87-c6a6-08dc319959c8",
+        "nationality": "ES",
         "identificationTypeId": 0,
         "identificationNumber": "46457469E",
         "address": "CL ONZE DE SETEMBRE 6 2 4",
         "postalCode": "08840",
         "city": "VILADECANS",
         "region": "BARCELONA",
-        "countryId": "54333adb-6544-4f87-c6a6-08dc319959c8",
+        "countryId": "ES",
         "linkedInProfile": " ", 
         "iban": "ESXXXXXXXXXXXXXXXXXXXXXX",
         "costs": [
@@ -342,6 +344,33 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
     }
     :return None
     """
+
+    # We need the GUID for the nationality
+    get_req = requests.get(URL_API + URL_COUNTRIES + f"?search={data['nationality']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i["isoAlfa2"].casefold() == data['nationality'].casefold()), None)
+
+        if item is not None:
+            data['nationality'] = item["id"]
+        else:
+            logging.error('Error nationality not found:' + data['nationality'])
+            return            
+
+    # We need the GUID for the country
+    get_req = requests.get(URL_API + URL_COUNTRIES + f"?search={data['countryId']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i["isoAlfa2"].casefold() == data['countryId'].casefold()), None)
+
+        if item is not None:
+            data['countryId'] = item["id"]
+        else:
+            logging.error('Error nationality not found:' + data['countryId'])
+            return            
+
     # Synchronize worker
     _glam_worker_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS, correlation_id=data['correlationId'], data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
 
