@@ -116,7 +116,7 @@ def disconnectMySQL(db):
         None
 
 def connectSQLServer(user, password, host, database):
-    return pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};\
+    return pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};\
                            SERVER='+host+';\
                            DATABASE='+database+';\
                            UID='+user+';\
