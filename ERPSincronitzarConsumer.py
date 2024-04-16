@@ -856,7 +856,7 @@ def main():
 
             reconnect = False
             while not reconnect:
-                logging.error('   Sleeping 60 seconds to reconnect with database&rabbit and retry...')
+                logging.info('   Sleeping 60 seconds to reconnect with database&rabbit and retry...')
                 time.sleep(60) 
             
                 try:
@@ -864,7 +864,7 @@ def main():
                     mycursor = dbOrigin.cursor()        
                     myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
                     reconnect = True
-                    logging.error('   Successfully reconnected. Execution continues...')
+                    logging.info('   Successfully reconnected. Execution continues...')
                     send_email("ERPSincronitzarConsumer - SUCCESSFULLY RECONNECTED", ENVIRONMENT, now, datetime.datetime.now(), "OK")  
                 except Exception as e:
                     logging.error('   Unexpected error reconnecting to database&rabbit: ' + str(e))
