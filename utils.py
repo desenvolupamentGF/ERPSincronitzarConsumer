@@ -26,6 +26,7 @@ TOKEN_GRANT_TYPE = os.environ['TOKEN_GRANT_TYPE']
 TOKEN_USERNAME = os.environ['TOKEN_USERNAME']
 TOKEN_PASSWORD = os.environ['TOKEN_PASSWORD']
 TOKEN_SCOPE = os.environ['TOKEN_SCOPE']
+TOKEN_EMAIL = os.environ['TOKEN_EMAIL']
 
 # Email constants
 EMAIL_SMTP = os.environ['EMAIL_SMTP']
@@ -35,12 +36,13 @@ EMAIL_USER_TO = os.environ['EMAIL_USER_TO']
 EMAIL_PASS = os.environ['EMAIL_PASS']
 
 # Function to generate token (not to call it directly --> externally use calculate_access_token below)
-def get_access_token(url, client_id, client_secret, grant_type, username, password, scope):
+def get_access_token(url, client_id, client_secret, grant_type, username, password, scope, email):
     data={
         "grant_type": grant_type,
         "username": username,
         "password": password,
-        "scope": scope
+        "scope": scope,
+        "email": email
     }
     response = requests.post(
         url,
@@ -52,9 +54,9 @@ def get_access_token(url, client_id, client_secret, grant_type, username, passwo
 # Function to generate token (to be called externally. Only one parameter: 0 for test, 1 for production)
 def calculate_access_token(environment):
     if environment == 0:
-        token = get_access_token(TOKEN_URL_TEST, TOKEN_CLIENT_ID, TOKEN_CLIENT_SECRET, TOKEN_GRANT_TYPE, TOKEN_USERNAME, TOKEN_PASSWORD, TOKEN_SCOPE)
+        token = get_access_token(TOKEN_URL_TEST, TOKEN_CLIENT_ID, TOKEN_CLIENT_SECRET, TOKEN_GRANT_TYPE, TOKEN_USERNAME, TOKEN_PASSWORD, TOKEN_SCOPE, TOKEN_EMAIL)
     else:
-        token = get_access_token(TOKEN_URL_PROD, TOKEN_CLIENT_ID, TOKEN_CLIENT_SECRET, TOKEN_GRANT_TYPE, TOKEN_USERNAME, TOKEN_PASSWORD, TOKEN_SCOPE)
+        token = get_access_token(TOKEN_URL_PROD, TOKEN_CLIENT_ID, TOKEN_CLIENT_SECRET, TOKEN_GRANT_TYPE, TOKEN_USERNAME, TOKEN_PASSWORD, TOKEN_SCOPE, TOKEN_EMAIL)
     return token
 
 # Example of use
