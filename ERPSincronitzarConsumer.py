@@ -370,7 +370,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         if item is not None:
             data['countryId'] = item["id"]
         else:
-            logging.error('Error nationality not found:' + data['countryId'])
+            logging.error('Error country not found:' + data['countryId'])
             return            
 
     # Synchronize worker
