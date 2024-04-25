@@ -119,17 +119,17 @@ def calculate_mask_value(warehouse_location_mask, zone_code, warehouse_code, pla
     # C(n)  -> Rack where n in the number of positions of the code I will replace with (left filled with 0s)
     # HT(n) -> Shelf where n in the number of positions of the code I will replace with (left filled with 0s)
     # P(n)  -> Position where n in the number of positions of the code I will replace with (left filled with 0s)
-    # Example warehouse_location_mask being G(1)W(1)Z(2)-P(4). This means:
+    # Example warehouse_location_mask being G(1)W(1)Z(2)-P(5). This means:
     #          First position starting on the right of the Geolocation code
     #          First position starting on the right of the Warehouse code
     #          First two positions starting on the right of the Zone code (filled with zeros on the left to complete 2 positions if needed)
     #          The character "-"
-    #          First 4 positions starting on the right of the project/location code (filled with zeros on the left to complete 4 positions if needed)
+    #          First 5 positions starting on the right of the project/location code (filled with zeros on the left to complete 5 positions if needed)
     #          So... being the geolocation code GS, with G(1) we will use "S"
     #                being the warehouse code WS, with W(1) we will use "S"
     #                being zone code ZS, with Z(2) we will use "ZS"
-    #                and being position code 123, with P(4) we will use "0123"
-    #          In this particular example detailed above, mask G(1)W(1)Z(2)-P(4) becomes "SSZS-0123"    
+    #                and being position code 123, with P(5) we will use "00123"
+    #          In this particular example detailed above, mask G(1)W(1)Z(2)-P(5) becomes "SSZS-00123"    
     ret = warehouse_location_mask
 
     warehouse_location_mask_aux = warehouse_location_mask.replace(")", ")|")    # I add a pipe "|" immediately after every ")"
