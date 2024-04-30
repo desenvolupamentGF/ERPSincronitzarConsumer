@@ -13,5 +13,7 @@ RUN curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/so
 # RUN apt-get update && apt-get install -y unixodbc-dev unixodbc odbcinst odbcinst1debian2 && ACCEPT_EULA=Y apt-get install -y msodbcsql18    
 RUN apt-get update && apt-get install -y unixodbc-dev unixodbc odbcinst odbcinst1debian2 freetds-dev && ACCEPT_EULA=Y apt-get install -y msodbcsql17
 
+COPY freetds.conf /etc/freetds/freetds.conf
+
 RUN pip install -r $APP_HOME/requirements.txt
 CMD python $APP_HOME/ERPSincronitzarConsumer.py
