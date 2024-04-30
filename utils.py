@@ -5,7 +5,7 @@ import logging
 import mysql.connector
 
 # To connect to SQLServer databases
-import pyodbc
+import pymssql
 
 # Import needed library for HTTP requests
 import requests
@@ -118,11 +118,8 @@ def disconnectMySQL(db):
         None
 
 def connectSQLServer(user, password, host, database):
-    return pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};\
-                           SERVER='+host+';\
-                           DATABASE='+database+';\
-                           UID='+user+';\
-                           PWD='+ password)       
+    return pymssql.connect(user=user, password=password,
+                           host=host, database=database, tds_version='7.0')       
        
 def disconnectSQLServer(db):
     try:
