@@ -630,7 +630,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                             data=json.dumps(post_product_costs_data), headers=headers,
                             verify=False, timeout=CONN_TIMEOUT)
                         if req_put.status_code == 200:
-                            update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin)
+                            update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_put.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin)
                         else:
                             sync_cost(dbOrigin, mycursor, headers, correlation_id,
                                       post_product_costs_url, post_product_costs_data,
