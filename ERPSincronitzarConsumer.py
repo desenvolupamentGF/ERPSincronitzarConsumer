@@ -744,6 +744,49 @@ def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 
 ####################################################################################################
 
+def sync_clients(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    print ("New message: client")
+    """
+    :param data: dict -> {
+        "code": "000164",
+        "legalName": "RUBATEC, SA", 
+        "tradeName": "RUBATEC, SA",
+        "countryId": "ESP",
+        "identificationType": {typeId: "3", number: "A60744216"},
+        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "correlationId": "000164"
+    }
+    :return None
+    """
+
+    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
+
+    # We need the GUID for the country
+    get_req = requests.get(URL_API + URL_COUNTRIES + f"?search={data['countryId']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i["isoAlfa3"].casefold() == data['countryId'].casefold()), None)
+
+        if item is not None:
+            data['countryId'] = item["id"]
+        else:
+            logging.error('Error country not found:' + data['countryId'])
+            return            
+
+    # Synchronize clients
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+
+    if _has_been_posted is not None and _has_been_posted is True:
+        try:
+            req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
+            if (req.status_code != 200 and req.status_code != 400): 
+                    raise Exception('PATCH with error when activating client')
+        except Exception as err:
+            logging.error('Error synch activating client with error: ' + str(err))          
+
+####################################################################################################
+
 def global_values():
     # Calculate access token and header for the request
     token = calculate_access_token(ENVIRONMENT)
@@ -893,6 +936,8 @@ def main():
                 # Proveïdors
                 if data['queueType'] == "ORGANIZATIONS_PROVEIDORS":
                     sync_proveidors(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
+                if data['queueType'] == "ORGANIZATIONS_CLIENTS":
+                    sync_clients(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
