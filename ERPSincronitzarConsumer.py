@@ -892,7 +892,7 @@ def main():
 
                 # Proveïdors
                 if data['queueType'] == "ORGANIZATIONS_PROVEIDORS":
-                    sync_proveidors(dbOrigin, mycursor, headers, data, 'Proveïdors ERP GF', 'Sage')
+                    sync_proveidors(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
