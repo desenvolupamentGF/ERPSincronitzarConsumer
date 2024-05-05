@@ -934,7 +934,7 @@ def main():
                     sync_usuaris(dbOrigin, mycursor, headers, data, 'Users ERP GF', 'Emmegi')
 
                 # Proveïdors
-                if data['queueType'] == "ORGANIZATIONS_PROVEIDORS1":
+                if data['queueType'] == "ORGANIZATIONS_PROVEIDORS":
                     sync_proveidors(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
                 if data['queueType'] == "ORGANIZATIONS_CLIENTS":
                     sync_clients(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
