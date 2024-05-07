@@ -447,7 +447,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
             req = requests.get(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
             _glam_description = req.json()['description']
-            _container_id = req.json()['container_id']
+            _containerId = req.json()['containerId']
 
         except Exception as err:
             logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
@@ -456,7 +456,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         if p_gf_description != _glam_description:
             try:
                 put_data = {"description": p_gf_description}
-                req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(_container_id),
+                req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(_containerId),
                                    data=json.dumps(put_data), headers=headers,
                                    verify=False, timeout=CONN_TIMEOUT)
                 if req.status_code != 200:
@@ -513,7 +513,7 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
         req = requests.get(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id), headers=headers,
                            verify=False, timeout=CONN_TIMEOUT)
         _glam_description = req.json()['description']
-        _container_id = req.json()['container_id']
+        _containerId = req.json()['containerId']
     except Exception as err:
         logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
         return
@@ -521,7 +521,7 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
     if p_gf_description != _glam_description:
         try:
             put_data = {"description": p_gf_description}
-            req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(p_glam_id),
+            req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(_containerId),
                                data=json.dumps(put_data), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
