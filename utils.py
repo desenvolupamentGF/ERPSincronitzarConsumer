@@ -60,7 +60,7 @@ def calculate_access_token(environment):
     return token
 
 # Example of use
-#token = calculate_access_token(0)
+#token = calculate_access_token(1)
 #print (token)
 
 # Only the token as part of the Bearer (to be used for instance when sending files)
