@@ -278,15 +278,35 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     }
     :return None
     """
+
+    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
+
+    # We check if the user already exists
+    get_req = requests.get(URL_API + URL_USERS + f"?search={data['userName']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i["userName"].casefold() == data['userName'].casefold()), None)
+
+        if item is not None: # If already exists in ERP GF, we keep current role and current state
+            if item["roleId"] != "":
+                data['roleId'] = item["roleId"]
+            if str(item["stateId"]) == "2": 
+                data['active'] = "0" # Inactive   
+            else: # str(item["stateId"]) == "1"
+                data['active'] = "1" # Active   
+        else: # If does not exist in ERP GF, we will create it as inactive and role guest (no need to change guest cos producer creates them as guest)
+            data['active'] = "0" # Inactive
+            
     # Synchronize users
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_USERS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_USERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="userName", filter_value=str(data['userName']).strip(), endPoint=endPoint, origin=origin)
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
             if data['active'] == "1":
-                dataStatus = { "action": "changeState", "stateId": "1"}
+                dataStatus = { "action": "changeState", "stateId": "1"} # Active
             else:
-                dataStatus = { "action": "changeState", "stateId": "2"}
+                dataStatus = { "action": "changeState", "stateId": "2"} # Inactive
 
             req = requests.patch(url=URL_API + URL_USERS + '/' + str(p_glam_id), data=json.dumps(dataStatus), headers=headers)
             if (req.status_code != 200 and req.status_code != 400): # (success code - 200 or 400)
