@@ -14,5 +14,5 @@ jobs:
     runs-on: [self-hosted, onpremise, consumer]
     steps:
       - name: Run deployment script on on-premise Debian
-        run: /home/glaw/repositories/erp-gf-sync/syncConsumer.sh
+        run: /home/glaw/repositories/erp-gf-sync/syncConsumer.sh > /home/glaw/logs/sync_consumer.log 2> /home/glaw/logs/sync_consumer_error.log
     
