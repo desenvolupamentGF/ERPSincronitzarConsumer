@@ -766,8 +766,8 @@ def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
             #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
             #if (req.status_code != 200 and req.status_code != 400): 
             #        raise Exception('PATCH with error when activating proveïdor')
-            post_provider = {"organizationId": str(p_glam_id), "account": data['account'], "correlationId": str(p_glam_id), }
-            synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=str(p_glam_id), producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+            post_provider = {"organizationId": str(p_glam_id), "account": data['account'], "correlationId": data['correlationId'], }
+            synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
         except Exception as err:
             logging.error('Error synch activating proveïdor with error: ' + str(err))          
@@ -813,9 +813,9 @@ def sync_clients(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
             #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
             #if (req.status_code != 200 and req.status_code != 400): 
             #        raise Exception('PATCH with error when activating client')
-            post_customer = {"organizationId": str(p_glam_id), "account": data['account'], "correlationId": str(p_glam_id), }
-            synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=str(p_glam_id), producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
-            
+            post_customer = {"organizationId": str(p_glam_id), "account": data['account'], "correlationId": data['correlationId'], }
+            synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+
         except Exception as err:
             logging.error('Error synch activating client with error: ' + str(err))          
 
@@ -967,7 +967,7 @@ def main():
                 if data['queueType'] == "USERS_USERS":
                     sync_usuaris(dbOrigin, mycursor, headers, data, 'Users ERP GF', 'Emmegi')
 
-                # Proveïdors
+                # Organizations
                 if data['queueType'] == "ORGANIZATIONS_PROVEIDORS":
                     sync_proveidors(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
                 if data['queueType'] == "ORGANIZATIONS_CLIENTS":
