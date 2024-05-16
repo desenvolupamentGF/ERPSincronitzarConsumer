@@ -758,7 +758,7 @@ def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
             logging.error('Error country not found:' + data['countryId'])
             return            
 
-    # Synchronize proveïdors
+    # Synchronize organization
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
     if _has_been_posted is not None and _has_been_posted is True:
@@ -766,12 +766,8 @@ def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
             #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
             #if (req.status_code != 200 and req.status_code != 400): 
             #        raise Exception('PATCH with error when activating proveïdor')
-            
             post_provider = {"organizationId": str(p_glam_id), "account": data['account']}
-            req = requests.post(url=URL_API + URL_PROVIDERS, data=json.dumps(post_provider),
-                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
-            if (req.status_code != 201):
-                    raise Exception('POST proveïdor with error when adding account')
+            synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=str(p_glam_id), producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
         except Exception as err:
             logging.error('Error synch activating proveïdor with error: ' + str(err))          
@@ -817,12 +813,8 @@ def sync_clients(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
             #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
             #if (req.status_code != 200 and req.status_code != 400): 
             #        raise Exception('PATCH with error when activating client')
-            
             post_customer = {"organizationId": str(p_glam_id), "account": data['account']}
-            req = requests.post(url=URL_API + URL_CUSTOMERS, data=json.dumps(post_customer),
-                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
-            if (req.status_code != 201):
-                    raise Exception('POST client with error when adding account')
+            synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=str(p_glam_id), producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
             
         except Exception as err:
             logging.error('Error synch activating client with error: ' + str(err))          
