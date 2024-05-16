@@ -41,6 +41,8 @@ URL_WORKERS = '/workers'
 URL_CONTRACTS = '/contracts'
 URL_USERS = '/users'
 URL_ORGANIZATIONS = '/organizations'
+URL_PROVIDERS = '/providers'
+URL_CUSTOMERS = '/customers'
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -734,6 +736,7 @@ def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
         "tradeName": "ASTIGLASS S.L",
         "countryId": "ESP",
         "identificationType": {typeId: "3", number: "B41610775"},
+        "account": "4000001650",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "correlationId": "GF1506"
     }
@@ -760,9 +763,16 @@ def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
-            req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
-            if (req.status_code != 200 and req.status_code != 400): 
-                    raise Exception('PATCH with error when activating proveïdor')
+            #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
+            #if (req.status_code != 200 and req.status_code != 400): 
+            #        raise Exception('PATCH with error when activating proveïdor')
+            
+            post_provider = {"organizationId": str(p_glam_id), "account": data['account']}
+            req = requests.post(url=URL_API + URL_PROVIDERS, data=json.dumps(post_provider),
+                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
+            if (req.status_code != 201):
+                    raise Exception('POST proveïdor with error when adding account')
+
         except Exception as err:
             logging.error('Error synch activating proveïdor with error: ' + str(err))          
 
@@ -777,6 +787,7 @@ def sync_clients(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
         "tradeName": "RUBATEC, SA",
         "countryId": "ESP",
         "identificationType": {typeId: "3", number: "A60744216"},
+        "account": "4300005382",        
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "correlationId": "000164"
     }
@@ -803,9 +814,16 @@ def sync_clients(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
-            req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
-            if (req.status_code != 200 and req.status_code != 400): 
-                    raise Exception('PATCH with error when activating client')
+            #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
+            #if (req.status_code != 200 and req.status_code != 400): 
+            #        raise Exception('PATCH with error when activating client')
+            
+            post_customer = {"organizationId": str(p_glam_id), "account": data['account']}
+            req = requests.post(url=URL_API + URL_CUSTOMERS, data=json.dumps(post_customer),
+                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
+            if (req.status_code != 201):
+                    raise Exception('POST client with error when adding account')
+            
         except Exception as err:
             logging.error('Error synch activating client with error: ' + str(err))          
 
