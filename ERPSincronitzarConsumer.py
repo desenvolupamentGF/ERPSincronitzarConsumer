@@ -930,8 +930,6 @@ def main():
                 # Organizations
                 if data['queueType'] == "ORGANIZATIONS_ORGANIZATIONS":
                     sync_organizations(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
-                if data['queueType'] == "ORGANIZATIONS_CLIENTS":
-                    sync_clients(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
