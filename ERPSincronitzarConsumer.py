@@ -727,18 +727,19 @@ def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pro
 
 ####################################################################################################
 
-def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: proveïdor")
+def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    print ("New message: organization")
     """
     :param data: dict -> {
-        "code": "GF1506",
-        "legalName": "ASTIGLASS S.L", 
-        "tradeName": "ASTIGLASS S.L",
-        "countryId": "ESP",
-        "identificationType": {typeId: "3", number: "B41610775"},
-        "account": "4000001650",
+        "code": "3664",
+        "legalName": "MECAL SRL", 
+        "tradeName": "MECAL SRL",
+        "countryId": "ITA",
+        "identificationType": {typeId: "3", number: "06645940013"},
+        "accountP": "4004000013",
+        "accountD": "4300042994",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "correlationId": "GF1506"
+        "correlationId": "3664"
     }
     :return None
     """
@@ -765,59 +766,18 @@ def sync_proveidors(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
         try:
             #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
             #if (req.status_code != 200 and req.status_code != 400): 
-            #        raise Exception('PATCH with error when activating proveïdor')
-            post_provider = {"organizationId": str(p_glam_id), "account": data['account'], "correlationId": data['correlationId'], }
-            synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+            #        raise Exception('PATCH with error when activating organization')
+
+            if data['accountP'] != "":
+                post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
+                synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+
+            if data['accountC'] != "":
+                post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
+                synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
         except Exception as err:
-            logging.error('Error synch activating proveïdor with error: ' + str(err))          
-
-####################################################################################################
-
-def sync_clients(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: client")
-    """
-    :param data: dict -> {
-        "code": "000164",
-        "legalName": "RUBATEC, SA", 
-        "tradeName": "RUBATEC, SA",
-        "countryId": "ESP",
-        "identificationType": {typeId: "3", number: "A60744216"},
-        "account": "4300005382",        
-        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "correlationId": "000164"
-    }
-    :return None
-    """
-
-    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
-
-    # We need the GUID for the country
-    get_req = requests.get(URL_API + URL_COUNTRIES + f"?search={data['countryId']}", headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-    
-    if get_req.status_code == 200:                
-        item = next((i for i in get_req.json() if i["isoAlfa3"].casefold() == data['countryId'].casefold()), None)
-
-        if item is not None:
-            data['countryId'] = item["id"]
-        else:
-            logging.error('Error country not found:' + data['countryId'])
-            return            
-
-    # Synchronize clients
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
-
-    if _has_been_posted is not None and _has_been_posted is True:
-        try:
-            #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
-            #if (req.status_code != 200 and req.status_code != 400): 
-            #        raise Exception('PATCH with error when activating client')
-            post_customer = {"organizationId": str(p_glam_id), "account": data['account'], "correlationId": data['correlationId'], }
-            synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
-
-        except Exception as err:
-            logging.error('Error synch activating client with error: ' + str(err))          
+            logging.error('Error synch activating organization with error: ' + str(err))          
 
 ####################################################################################################
 
@@ -968,8 +928,8 @@ def main():
                     sync_usuaris(dbOrigin, mycursor, headers, data, 'Users ERP GF', 'Emmegi')
 
                 # Organizations
-                if data['queueType'] == "ORGANIZATIONS_PROVEIDORS":
-                    sync_proveidors(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
+                if data['queueType'] == "ORGANIZATIONS_ORGANIZATIONS":
+                    sync_organizations(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
                 if data['queueType'] == "ORGANIZATIONS_CLIENTS":
                     sync_clients(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
 
