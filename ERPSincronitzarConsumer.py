@@ -731,7 +731,6 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
     print ("New message: organization")
     """
     :param data: dict -> {
-        "code": "3664",
         "legalName": "MECAL SRL", 
         "tradeName": "MECAL SRL",
         "countryId": "ITA",
@@ -739,7 +738,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "accountP": "4004000013",
         "accountD": "4300042994",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "correlationId": "3664"
+        "correlationId": "06645940013"
     }
     :return None
     """
