@@ -433,7 +433,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                                      data=json.dumps(patch_data), headers=headers,
                                      verify=False, timeout=CONN_TIMEOUT)
                 if req.status_code != 200:
-                    raise Exception('PATCH with error')
+                    raise Exception('PATCH with error when processing costs')
             except Exception as err:
                 logging.error('Error synch: ' + URL_WORKERS + ':' + str(_glam_worker_id) + " With error: " + str(err))
 
@@ -687,7 +687,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                                     data=json.dumps(patch_data), headers=headers,
                                     verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
-                raise Exception('PATCH with error')
+                raise Exception('PATCH with error when activating product')
         except Exception as err:
             logging.error('Error synch: ' + URL_PRODUCTS + ':' + correlation_id + " With error: " + str(err))
 
@@ -763,9 +763,13 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
-            #req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + "/activate", headers=headers)
-            #if (req.status_code != 200 and req.status_code != 400): 
-            #        raise Exception('PATCH with error when activating organization')
+            # Activate organization.
+            patch_data = {"action": "ChangeState", "stateId": 2}  # 2 = State active.
+            req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id),
+                                    data=json.dumps(patch_data), headers=headers,
+                                    verify=False, timeout=CONN_TIMEOUT)
+            if req.status_code != 200:
+                raise Exception('PATCH with error when activating organization')
 
             if data['accountP'] != "":
                 post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
