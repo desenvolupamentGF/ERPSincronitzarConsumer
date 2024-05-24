@@ -220,7 +220,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
     else:
         return glam_id, False
 
-    if req.status_code in [200, 201]:  # POST or PUT success 
+    if req.status_code in [200, 201]:  # PUT or POST success 
         if endPoint == "Users ERP GF": # This endpoint is not returning "id" as the others
             p_glam_id = req.json()['userName']
         else:
@@ -800,8 +800,6 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     :return None
     """
 
-    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
-
     # We need to get the GUID for the organization
     get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nameOrganization']}", headers=headers,
                            verify=False, timeout=CONN_TIMEOUT)
@@ -816,13 +814,12 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
             return            
 
     # Synchronize person
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
-            # Assigning person as contact of the organization.
-            post_data = {"personId": p_glam_id, "position": data['position'], "comments": data['comments']} 
-            req = requests.post(url=URL_API + URL_ORGANIZATIONS + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
+            post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
+            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 201:
                 raise Exception('POST with error when assigning person as contact of the organization')
