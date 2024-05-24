@@ -43,6 +43,8 @@ URL_USERS = '/users'
 URL_ORGANIZATIONS = '/organizations'
 URL_PROVIDERS = '/providers'
 URL_CUSTOMERS = '/customers'
+URL_PERSONS = "/persons"
+URL_CONTACTS = "/contacts"
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -782,6 +784,52 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
 
+def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    print ("New message: clientContacte")
+    """
+    :param data: dict -> {
+        "name": "JESUS GARCIA",
+        "nameOrganization": "CEL URBÀ",
+        "phone": "611448303",
+        "email": "jgarcia@celurba.es",
+        "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
+        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "position": "CAP D'OBRA",
+        "comments": ""        
+    }
+    :return None
+    """
+
+    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
+
+    # We need to get the GUID for the organization
+    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nameOrganization']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i["legalName"].casefold() == data['nameOrganization'].casefold()), None)
+
+        if item is not None:
+            organizationId = item["id"]
+        else:
+            logging.error('Error organization not found:' + data['nameOrganization'])
+            return            
+
+    # Synchronize person
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+
+    if _has_been_posted is not None and _has_been_posted is True:
+        try:
+            # Assigning person as contact of the organization.
+            post_data = {"personId": p_glam_id, "position": data['position'], "comments": data['comments']} 
+            req = requests.post(url=URL_API + URL_ORGANIZATIONS + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
+                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
+            if req.status_code != 201:
+                raise Exception('POST with error when assigning person as contact of the organization')
+
+        except Exception as err:
+            logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
+
 ####################################################################################################
 
 def global_values():
@@ -933,6 +981,8 @@ def main():
                 # Organizations
                 if data['queueType'] == "ORGANIZATIONS_ORGANIZATIONS":
                     sync_organizations(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
+                if data['queueType'] == "CLIENTS_CONTACTES":
+                    sync_clientsContactes(dbOrigin, mycursor, headers, data, 'Clients ERP GF', 'Pipedrive')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
