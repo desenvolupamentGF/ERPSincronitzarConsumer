@@ -45,6 +45,7 @@ URL_PROVIDERS = '/providers'
 URL_CUSTOMERS = '/customers'
 URL_PERSONS = "/persons"
 URL_CONTACTS = "/contacts"
+URL_ADDRESS = "/address"
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -740,7 +741,15 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "accountP": "4004000013",
         "accountD": "4300042994",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "correlationId": "06645940013"
+        "correlationId": "06645940013",
+        "name": "MECAL SRL",
+        "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
+        "postalCode": "08850",
+        "city": "GAVA",
+        "region": "BARCELONA",
+        "phone": "62615405",
+        "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
+        "geolocation": ""
     }
     :return None
     """
@@ -780,6 +789,17 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             if data['accountC'] != "":
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+
+                # We create an address for the organization
+                req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data),     
+                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                if req.status_code != 201:
+                    raise Exception('POST with error when assigning address to the organization')
+                else:
+                    # And we mark the address as main contact of the organization
+                    req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + "/" + str(req.json()['id']) + "/" + "setMainContact", headers=headers)
+                    if (req.status_code != 200 and req.status_code != 400): # (success code - 200 or 400)
+                        raise Exception('PATCH with error when marking the address as main contact of the organization')
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
