@@ -795,11 +795,6 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                                     headers=headers, verify=False, timeout=CONN_TIMEOUT)
                 if req.status_code != 201:
                     raise Exception('POST with error when assigning address to the organization')
-                else:
-                    # And we mark the address as main contact of the organization
-                    req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + "/" + str(req.json()['id']) + "/" + "setMainContact", headers=headers)
-                    if (req.status_code != 200 and req.status_code != 400): # (success code - 200 or 400)
-                        raise Exception('PATCH with error when marking the address as main contact of the organization')
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
