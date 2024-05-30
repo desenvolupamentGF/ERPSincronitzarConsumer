@@ -790,11 +790,11 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
-                # We create an address for the organization
-                req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data),     
-                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                if req.status_code != 201:
-                    raise Exception('POST with error when assigning address to the organization')
+            # We create an address for the organization
+            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data),     
+                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
+            if req.status_code != 201:
+                raise Exception('POST with error when assigning address to the organization')
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
