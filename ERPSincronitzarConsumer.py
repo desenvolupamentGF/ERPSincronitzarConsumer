@@ -742,14 +742,22 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "accountD": "4300042994",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "correlationId": "06645940013",
-        "name": "MECAL SRL",
-        "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
-        "postalCode": "08850",
-        "city": "GAVA",
-        "region": "BARCELONA",
-        "phone": "62615405",
         "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
-        "geolocation": ""
+        "geolocation": "",
+        "dataProveedor":
+            "name": "MECAL SRL",
+            "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
+            "postalCode": "08850",
+            "city": "GAVA",
+            "region": "BARCELONA",
+            "phone": "62615405",
+        "dataCliente":
+            "name": "MECAL SRL",
+            "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
+            "postalCode": "08850",
+            "city": "GAVA",
+            "region": "BARCELONA",
+            "phone": "62615405"
     }
     :return None
     """
@@ -786,15 +794,21 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
+                # We create an address for the organization/provider
+                req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataProveedor']),     
+                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                if req.status_code != 201:
+                    raise Exception('POST with error when assigning address to the organization/provider')
+
             if data['accountC'] != "":
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
-            # We create an address for the organization
-            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data),     
-                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
-            if req.status_code != 201:
-                raise Exception('POST with error when assigning address to the organization')
+                # We create an address for the organization/client
+                req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataCliente']),     
+                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                if req.status_code != 201:
+                    raise Exception('POST with error when assigning address to the organization/client')
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
