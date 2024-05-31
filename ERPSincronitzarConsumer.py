@@ -808,7 +808,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataProveedor']),     
                                     headers=headers, verify=False, timeout=CONN_TIMEOUT)
                 if req.status_code != 201:
-                    raise Exception('POST with error when assigning address to the organization/provider')
+                    logging.error('Error when assigning address to the organization/provider')
 
             if data['accountC'] != "":
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
@@ -818,7 +818,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataCliente']),     
                                     headers=headers, verify=False, timeout=CONN_TIMEOUT)
                 if req.status_code != 201:
-                    raise Exception('POST with error when assigning address to the organization/client')
+                    logging.error('Error when assigning address to the organization/client')
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
