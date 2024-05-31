@@ -744,20 +744,30 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "correlationId": "06645940013",
         "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
         "geolocation": "",
-        "dataProveedor":
+        "dataProveedor": {
             "name": "MECAL SRL",
             "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
             "postalCode": "08850",
             "city": "GAVA",
             "region": "BARCELONA",
             "phone": "62615405",
-        "dataCliente":
+            "codigoCondiciones": "34",
+            "descuento": "10",
+            "prontoPago": "10",
+            "financiacion": "10"
+        },
+        "dataCliente": {
             "name": "MECAL SRL",
             "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
             "postalCode": "08850",
             "city": "GAVA",
             "region": "BARCELONA",
-            "phone": "62615405"
+            "phone": "62615405",
+            "codigoCondiciones": "34",
+            "descuento": "10",
+            "prontoPago": "10",
+            "financiacion": "10"
+        }
     }
     :return None
     """
