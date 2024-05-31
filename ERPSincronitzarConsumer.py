@@ -751,10 +751,17 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "city": "GAVA",
             "region": "BARCELONA",
             "phone": "62615405",
-            "codigoCondiciones": "34",
-            "descuento": "10",
-            "prontoPago": "10",
-            "financiacion": "10"
+            "conditionTypeId": 2,
+            "currencyId": "926b9441-12be-4fd0-77a8-08dc32d2fd0b",
+            "invoicingTypeId": GLAMSUITE_DEFAULT_INVOICING_TYPE_ID,
+            "paymentMethodId": "34",
+            "warehouseId": GLAMSUITE_DEFAULT_WAREHOUSE_ID,
+            "carrierId": GLAMSUITE_DEFAULT_CARRIER_ID,
+            "incotermId": "6ebb8fbc-69f8-4320-0d6e-08dc744b792d",
+            "specialDiscount": "10",
+            "paymentInAdvanceDiscount": "10",
+            "finantialCost": "10",
+            "shippingDays": 0
         },
         "dataCliente": {
             "name": "MECAL SRL",
@@ -763,10 +770,17 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "city": "GAVA",
             "region": "BARCELONA",
             "phone": "62615405",
-            "codigoCondiciones": "34",
-            "descuento": "10",
-            "prontoPago": "10",
-            "financiacion": "10"
+            "conditionTypeId": 1,
+            "currencyId": "926b9441-12be-4fd0-77a8-08dc32d2fd0b",
+            "invoicingTypeId": GLAMSUITE_DEFAULT_INVOICING_TYPE_ID,
+            "paymentMethodId": "34",
+            "warehouseId": GLAMSUITE_DEFAULT_WAREHOUSE_ID,
+            "carrierId": GLAMSUITE_DEFAULT_CARRIER_ID,
+            "incotermId": "6ebb8fbc-69f8-4320-0d6e-08dc744b792d",
+            "specialDiscount": "10",
+            "paymentInAdvanceDiscount": "10",
+            "finantialCost": "10",
+            "shippingDays": 0
         }
     }
     :return None
