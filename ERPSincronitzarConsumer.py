@@ -46,6 +46,8 @@ URL_CUSTOMERS = '/customers'
 URL_PERSONS = "/persons"
 URL_CONTACTS = "/contacts"
 URL_ADDRESS = "/address"
+URL_PAYMENTMETHODS = '/paymentMethods'
+URL_COMMERCIALCONDITIONS = '/commercialConditions'
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -730,6 +732,20 @@ def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pro
 
 ####################################################################################################
 
+def sync_paymentMethods(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    print ("New message: payment method")
+    """
+    :param data: dict -> {
+        "companyId": GLAMSUITE_DEFAULT_COMPANY_ID,
+        "ibanPrintMethodId": 0,
+        "code": "1",
+        "name": "Rebut 30 dies",
+        "correlationId": "1"
+    }
+    :return None
+    """
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_PAYMENTMETHODS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+
 def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     print ("New message: organization")
     """
@@ -754,7 +770,6 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "conditionTypeId": 2,
             "currencyId": "926b9441-12be-4fd0-77a8-08dc32d2fd0b",
             "invoicingTypeId": GLAMSUITE_DEFAULT_INVOICING_TYPE_ID,
-            "paymentMethodId": "34",
             "warehouseId": GLAMSUITE_DEFAULT_WAREHOUSE_ID,
             "carrierId": GLAMSUITE_DEFAULT_CARRIER_ID,
             "incotermId": "6ebb8fbc-69f8-4320-0d6e-08dc744b792d",
@@ -762,7 +777,8 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "specialDiscount": "10",
             "paymentInAdvanceDiscount": "10",
             "finantialCost": "10",
-            "shippingDays": 0
+            "shippingDays": 0,
+            "paymentMethodId": "b5a489b7-b883-43b6-1871-08dc82d66c97"
         },
         "dataCliente": {
             "name": "MECAL SRL",
@@ -774,7 +790,6 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "conditionTypeId": 1,
             "currencyId": "926b9441-12be-4fd0-77a8-08dc32d2fd0b",
             "invoicingTypeId": GLAMSUITE_DEFAULT_INVOICING_TYPE_ID,
-            "paymentMethodId": "34",
             "warehouseId": GLAMSUITE_DEFAULT_WAREHOUSE_ID,
             "carrierId": GLAMSUITE_DEFAULT_CARRIER_ID,
             "incotermId": "6ebb8fbc-69f8-4320-0d6e-08dc744b792d",
@@ -782,7 +797,8 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "specialDiscount": "10",
             "paymentInAdvanceDiscount": "10",
             "finantialCost": "10",
-            "shippingDays": 0
+            "shippingDays": 0,
+            "paymentMethodId": "b5a489b7-b883-43b6-1871-08dc82d66c97"
         }
     }
     :return None
@@ -825,16 +841,28 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                                     headers=headers, verify=False, timeout=CONN_TIMEOUT)
                 if req.status_code != 201:
                     logging.error('Error when assigning address to the organization/provider')
+                else:
+                    # Time to stablish the commercial conditions of the organization/provider
+                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + reqAddr.json()['id'] + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataProveedor']),     
+                                               headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                    if reqComCond.status_code != 201:
+                        logging.error('Error when assigning commercial conditions to the organization/provider')
 
             if data['accountC'] != "":
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/client
-                req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataCliente']),     
-                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                if req.status_code != 201:
+                reqAddr = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataCliente']),     
+                                        headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                if reqAddr.status_code != 201:
                     logging.error('Error when assigning address to the organization/client')
+                else:
+                    # Time to stablish the commercial conditions of the organization/client
+                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + reqAddr.json()['id'] + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataCliente']),     
+                                               headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                    if reqComCond.status_code != 201:
+                        logging.error('Error when assigning commercial conditions to the organization/client')
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
@@ -1031,6 +1059,8 @@ def main():
                     sync_usuaris(dbOrigin, mycursor, headers, data, 'Users ERP GF', 'Emmegi')
 
                 # Organizations
+                if data['queueType'] == "ORGANIZATIONS_PAYMENTMETHODS":
+                    sync_paymentMethods(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
                 if data['queueType'] == "ORGANIZATIONS_ORGANIZATIONS":
                     sync_organizations(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
                 if data['queueType'] == "CLIENTS_CONTACTES":
