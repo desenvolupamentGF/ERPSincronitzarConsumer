@@ -778,6 +778,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "paymentInAdvanceDiscount": "10",
             "finantialCost": "10",
             "shippingDays": 0,
+            "correlationId": "06645940013",
             "paymentMethodId": "b5a489b7-b883-43b6-1871-08dc82d66c97"
         },
         "dataCliente": {
@@ -798,6 +799,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "paymentInAdvanceDiscount": "10",
             "finantialCost": "10",
             "shippingDays": 0,
+            "correlationId": "06645940013",            
             "paymentMethodId": "b5a489b7-b883-43b6-1871-08dc82d66c97"
         }
     }
@@ -833,33 +835,33 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 raise Exception('PATCH with error when activating organization')
 
             if data['accountP'] != "":
+                # The organization is a provider too
                 post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/provider
-                req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataProveedor']),     
-                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                if req.status_code != 201:
-                    logging.error('Error when assigning address to the organization/provider')
-                else:
+                dataProveedor = data['dataProveedor']
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedor, data=dataProveedor, filter_name="name", filter_value=str(dataProveedor['name']).strip(), endPoint=endPoint, origin=origin)
+
+                if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/provider
-                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + reqAddr.json()['id'] + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataProveedor']),     
+                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + '/' + str(p_glam_address_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataProveedor']),     
                                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
                     if reqComCond.status_code != 201:
                         logging.error('Error when assigning commercial conditions to the organization/provider')
 
             if data['accountC'] != "":
+                # The organization is a client too
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/client
-                reqAddr = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, data=json.dumps(data['dataCliente']),     
-                                        headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                if reqAddr.status_code != 201:
-                    logging.error('Error when assigning address to the organization/client')
-                else:
+                dataCliente = data['dataCliente']
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataCliente, data=dataCliente, filter_name="name", filter_value=str(dataCliente['name']).strip(), endPoint=endPoint, origin=origin)
+
+                if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/client
-                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + reqAddr.json()['id'] + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataCliente']),     
+                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + '/' + str(p_glam_address_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataCliente']),     
                                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
                     if reqComCond.status_code != 201:
                         logging.error('Error when assigning commercial conditions to the organization/client')
