@@ -750,6 +750,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
     print ("New message: organization")
     """
     :param data: dict -> {
+        "code": "06645940013",
         "legalName": "MECAL SRL", 
         "tradeName": "MECAL SRL",
         "countryId": "ITA",
@@ -758,20 +759,21 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "accountD": "4300042994",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "correlationId": "06645940013",
-        "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
-        "geolocation": "",
-        "dataProveedor": {
+        "dataProveedor": {	
             "name": "MECAL SRL",
             "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
             "postalCode": "08850",
             "city": "GAVA",
             "region": "BARCELONA",
             "phone": "62615405",
+            "countryId": str(_codNacion).strip(),
+            "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
+            "geolocation": "",
             "conditionTypeId": 2,
             "currencyId": "926b9441-12be-4fd0-77a8-08dc32d2fd0b",
-            "invoicingTypeId": GLAMSUITE_DEFAULT_INVOICING_TYPE_ID,
-            "warehouseId": GLAMSUITE_DEFAULT_WAREHOUSE_ID,
-            "carrierId": GLAMSUITE_DEFAULT_CARRIER_ID,
+            "invoicingTypeId": "5c037462-6da1-44b1-8128-08dc8155eff7",
+            "warehouseId": "e0bed6ad-27e3-4411-942f-08dc83ccd0d3",
+            "carrierId": "5bb8e236-1566-49b6-fffd-08dc81572e74",
             "incotermId": "6ebb8fbc-69f8-4320-0d6e-08dc744b792d",
             "rates": [],
             "specialDiscount": "10",
@@ -788,11 +790,14 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "city": "GAVA",
             "region": "BARCELONA",
             "phone": "62615405",
+            "countryId": str(_codNacion).strip(),
+            "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
+            "geolocation": "",
             "conditionTypeId": 1,
             "currencyId": "926b9441-12be-4fd0-77a8-08dc32d2fd0b",
-            "invoicingTypeId": GLAMSUITE_DEFAULT_INVOICING_TYPE_ID,
-            "warehouseId": GLAMSUITE_DEFAULT_WAREHOUSE_ID,
-            "carrierId": GLAMSUITE_DEFAULT_CARRIER_ID,
+            "invoicingTypeId": "5c037462-6da1-44b1-8128-08dc8155eff7",
+            "warehouseId": "e0bed6ad-27e3-4411-942f-08dc83ccd0d3",
+            "carrierId": "5bb8e236-1566-49b6-fffd-08dc81572e74",
             "incotermId": "6ebb8fbc-69f8-4320-0d6e-08dc744b792d",
             "rates": [],            
             "specialDiscount": "10",
@@ -808,6 +813,9 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
     dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
 
+    dataProveedor = data['dataProveedor']
+    dataCliente = data['dataCliente']
+
     # We need the GUID for the country
     get_req = requests.get(URL_API + URL_COUNTRIES + f"?search={data['countryId']}", headers=headers,
                            verify=False, timeout=CONN_TIMEOUT)
@@ -817,6 +825,8 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
         if item is not None:
             data['countryId'] = item["id"]
+            dataProveedor['countryId'] = item["id"]
+            dataCliente['countryId'] = item["id"]
         else:
             logging.error('Error country not found:' + data['countryId'])
             return            
@@ -840,12 +850,12 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/provider
-                dataProveedor = data['dataProveedor']
                 p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedor, data=dataProveedor, filter_name="name", filter_value=str(dataProveedor['name']).strip(), endPoint=endPoint, origin=origin)
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/provider
-                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + '/' + str(p_glam_address_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataProveedor']),     
+                    dataProveedor['organizationAddressId'] = str(p_glam_address_id)
+                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(dataProveedor),     
                                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
                     if reqComCond.status_code != 201:
                         logging.error('Error when assigning commercial conditions to the organization/provider')
@@ -856,12 +866,12 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/client
-                dataCliente = data['dataCliente']
                 p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataCliente, data=dataCliente, filter_name="name", filter_value=str(dataCliente['name']).strip(), endPoint=endPoint, origin=origin)
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/client
-                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS + '/' + str(p_glam_address_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(data['dataCliente']),     
+                    dataCliente['organizationAddressId'] = str(p_glam_address_id)
+                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(dataCliente),     
                                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
                     if reqComCond.status_code != 201:
                         logging.error('Error when assigning commercial conditions to the organization/client')
