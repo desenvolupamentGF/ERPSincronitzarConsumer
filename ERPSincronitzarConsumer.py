@@ -854,11 +854,12 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/provider
-                    dataProveedor['organizationAddressId'] = str(p_glam_address_id)
-                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(dataProveedor),     
-                                               headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                    if reqComCond.status_code != 201:
-                        logging.error('Error when assigning commercial conditions to the organization/provider')
+                    if dataProveedor['paymentMethodId'] != "":
+                        dataProveedor['organizationAddressId'] = str(p_glam_address_id)
+                        reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(dataProveedor),     
+                                                   headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                        if reqComCond.status_code != 201:
+                            logging.error('Error when assigning commercial conditions to the organization/provider')
 
             if data['accountC'] != "":
                 # The organization is a client too
@@ -870,11 +871,12 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/client
-                    dataCliente['organizationAddressId'] = str(p_glam_address_id)
-                    reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(dataCliente),     
-                                               headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                    if reqComCond.status_code != 201:
-                        logging.error('Error when assigning commercial conditions to the organization/client')
+                    if dataCliente['paymentMethodId'] != "":
+                        dataCliente['organizationAddressId'] = str(p_glam_address_id)
+                        reqComCond = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, data=json.dumps(dataCliente),     
+                                                   headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                        if reqComCond.status_code != 201:
+                            logging.error('Error when assigning commercial conditions to the organization/client')
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
