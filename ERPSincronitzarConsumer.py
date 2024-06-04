@@ -812,6 +812,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
     """
 
     dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
+    
     dataProveedor = data['dataProveedor'].copy() # copy for the same reason as previous
     dataCliente = data['dataCliente'].copy() # copy for the same reason as previous
 
