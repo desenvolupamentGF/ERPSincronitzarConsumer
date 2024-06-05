@@ -892,7 +892,8 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "position": "CAP D'OBRA",
-        "comments": ""        
+        "comments": "",
+        "correlationId":        
     }
     :return None
     """
@@ -908,6 +909,50 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
             organizationId = item["id"]
         else:
             logging.error('Error organization not found:' + data['nameOrganization'])
+            return            
+
+    # Synchronize person
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+
+    if _has_been_posted is not None and _has_been_posted is True:
+        try:
+            post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
+            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
+                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
+            if req.status_code != 201:
+                raise Exception('POST with error when assigning person as contact of the organization')
+
+        except Exception as err:
+            logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
+
+def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    print ("New message: proveïdorContacte")
+    """
+    :param data: dict -> {
+        "name": "Luis López",
+        "nif": "B81147951",
+        "phone": "620145093",
+        "email": "l.lopez@extol.es",
+        "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
+        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "position": "Director comercial",
+        "comments": "",
+        "correlationId":                        
+    }
+    :return None
+    """
+
+    # We need to get the GUID for the organization
+    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i["identificationType"]["number"].casefold() == data['nif'].casefold()), None)
+
+        if item is not None:
+            organizationId = item["id"]
+        else:
+            logging.error('Error organization not found:' + data['nif'])
             return            
 
     # Synchronize person
@@ -1079,6 +1124,8 @@ def main():
                     sync_organizations(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
                 if data['queueType'] == "CLIENTS_CONTACTES":
                     sync_clientsContactes(dbOrigin, mycursor, headers, data, 'Clients ERP GF', 'Pipedrive')
+                if data['queueType'] == "PROVEIDORS_CONTACTES":
+                    sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
