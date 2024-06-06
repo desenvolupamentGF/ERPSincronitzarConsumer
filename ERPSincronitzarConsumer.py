@@ -937,7 +937,7 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "position": "Director comercial",
         "comments": "",
-        "correlationId":                        
+        "correlationId": "CONTACTE_1"                       
     }
     :return None
     """
@@ -968,6 +968,63 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 
         except Exception as err:
             logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
+
+def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    print ("New message: proveïdorCampsPersonalitzats")
+    """
+    :param data: dict -> {
+        "nif": "04537481H",
+        "tipus": "B",
+        "pagaments": "A",
+        "lliurament": "C",
+        "preus": "A",
+        "familia": "XAPES ALUMINI",
+        "producte": "XAPES ALUMINI, PERFILS ALUMINI",
+        "enviamentComandes": "lpascual@aalco.es",
+        "reclamacions": "lpascual@aalco.es",
+        "reclamacionsUrgents": "lpascual@aalco.es",
+        "reclamacionsCritiques": "lpascual@aalco.es",        
+        "web": "www.alumisan.com",        
+        "correlationId": "PERSONALITZAT_1"                        
+    }
+    :return None
+    """
+
+    # We need to get the GUID for the organization
+    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i["identificationType"]["number"].casefold() == data['nif'].casefold()), None)
+
+        if item is not None:
+            organizationId = item["id"]
+        else:
+            logging.error('Error organization not found:' + data['nif'])
+            return            
+
+    # We also need the account of the organization/provider
+    try:
+        get_req = requests.get(URL_API + URL_PROVIDERS + '/' + str(organizationId), headers=headers,
+                               verify=False, timeout=CONN_TIMEOUT)
+        if get_req.status_code == 404:
+            logging.error('Error account of the organization/provider not found')          
+            return
+        else:
+            account = get_req.json()['account']
+    except Exception as err:
+        logging.error('Error when retreaving account of the organization/provider with error: ' + str(err))          
+        return
+
+    try:
+        post_data = {"account": str(account), "customerCode": "", "customFieldValues": data} 
+        req = requests.put(url=URL_API + URL_PROVIDERS + '/' + str(organizationId), data=json.dumps(post_data),     
+                           headers=headers, verify=False, timeout=CONN_TIMEOUT)
+        if req.status_code != 200:
+            raise Exception('PUT with error when assigning personalized fields to the organization')
+
+    except Exception as err:
+        logging.error('Error when assigning personalized fields to the organization with error: ' + str(err))          
 
 ####################################################################################################
 
@@ -1126,6 +1183,8 @@ def main():
                     sync_clientsContactes(dbOrigin, mycursor, headers, data, 'Clients ERP GF', 'Pipedrive')
                 if data['queueType'] == "PROVEIDORS_CONTACTES":
                     sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
+                if data['queueType'] == "PROVEIDORS_CAMPSPERSONALITZATS":
+                    sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
