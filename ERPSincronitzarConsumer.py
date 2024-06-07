@@ -860,8 +860,6 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
                         if reqComCond.status_code != 201:
                             logging.error('Error when assigning commercial conditions to the organization/provider with error: ' + str(reqComCond.status_code))
-                        else:
-                            logging.info('Created commercial conditions for GUID/organization/provider: ' + str(p_glam_id))        
 
             if data['accountC'] != "":
                 # The organization is a client too
@@ -879,8 +877,6 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
                         if reqComCond.status_code != 201:
                             logging.error('Error when assigning commercial conditions to the organization/client with error: ' + str(reqComCond.status_code))
-                        else:
-                            logging.info('Created commercial conditions for GUID/organization/client: ' + str(p_glam_id))        
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
