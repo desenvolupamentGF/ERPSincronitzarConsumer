@@ -760,7 +760,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "correlationId": "06645940013",
         "dataProveedor": {	
-            "name": "MECAL SRL",
+            "name": "Domicili Fiscal",
             "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
             "postalCode": "08850",
             "city": "GAVA",
@@ -784,7 +784,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "paymentMethodId": "b5a489b7-b883-43b6-1871-08dc82d66c97"
         },
         "dataCliente": {
-            "name": "MECAL SRL",
+            "name": "Domicili Fiscal",
             "address": "CR/SANTA CREU DE CALAFELL,93,1-2",
             "postalCode": "08850",
             "city": "GAVA",
@@ -850,7 +850,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/provider
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedor, data=dataProveedor, filter_name="name", filter_value=str(dataProveedor['name']).strip(), endPoint=endPoint, origin=origin)
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedor, data=dataProveedor, filter_name="address", filter_value=str(dataProveedor['address']).strip(), endPoint=endPoint, origin=origin)
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/provider
@@ -867,7 +867,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/client
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataCliente, data=dataCliente, filter_name="name", filter_value=str(dataCliente['name']).strip(), endPoint=endPoint, origin=origin)
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataCliente, data=dataCliente, filter_name="address", filter_value=str(dataCliente['address']).strip(), endPoint=endPoint, origin=origin)
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/client
