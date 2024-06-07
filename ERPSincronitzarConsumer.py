@@ -842,7 +842,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                                     data=json.dumps(patch_data), headers=headers,
                                     verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
-                raise Exception('PATCH with error when activating organization')
+                logging.error('PATCH with error when activating organization with error: ' + str(req.status_code))
 
             if data['accountP'] != "":
                 # The organization is a provider too
