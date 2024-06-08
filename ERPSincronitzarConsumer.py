@@ -269,7 +269,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
 ####################################################################################################
 
 def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: usuari")
+    logging.info('New message: usuari')
     """
     :param data: dict -> {
         "userName": "aezcurra",
@@ -324,7 +324,7 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 ####################################################################################################
 
 def sync_departaments(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: departament")
+    logging.info('New message: departament')
     """
     :param data: dict -> {
         "name": "COMERCIAL",
@@ -338,7 +338,7 @@ def sync_departaments(dbOrigin, mycursor, headers, data: dict, endPoint, origin)
     synch_by_database(dbOrigin, mycursor, headers, url=URL_DEPARTMENTS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
 
 def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
-    print ("New message: treballador")
+    logging.info('New message: treballador')
     """
     :param data: dict -> {
         "name": "ARCOS ESPINOSA JESUS",
@@ -494,7 +494,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
 ####################################################################################################
 
 def sync_families(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: familia")
+    logging.info('New message: familia')
     """
     :param data: dict -> {
         "companyId": GLAMSUITE_DEFAULT_COMPANY_ID,
@@ -510,7 +510,7 @@ def sync_families(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     synch_by_database(dbOrigin, mycursor, headers, url=URL_FAMILIES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
 
 def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
-    print ("New message: project")
+    logging.info('New message: project')
     """
     Sincronitzem els projectes. A 11/22 només creem ubicacions.
     :param data: dict -> {
@@ -558,7 +558,7 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
     return
 
 def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: product")        
+    logging.info('New message: product')
     """
     :param data: dict -> {
         "correlationId": "02",
@@ -733,7 +733,7 @@ def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pro
 ####################################################################################################
 
 def sync_paymentMethods(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: payment method")
+    logging.info('New message: payment method')
     """
     :param data: dict -> {
         "companyId": GLAMSUITE_DEFAULT_COMPANY_ID,
@@ -747,7 +747,7 @@ def sync_paymentMethods(dbOrigin, mycursor, headers, data: dict, endPoint, origi
     synch_by_database(dbOrigin, mycursor, headers, url=URL_PAYMENTMETHODS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
 
 def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: organization")
+    logging.info('New message: organization')
     """
     :param data: dict -> {
         "code": "06645940013",
@@ -875,7 +875,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             logging.error('Error synch activating organization with error: ' + str(err))          
 
 def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: clientContacte")
+    logging.info('New message: clientContacte')
     """
     :param data: dict -> {
         "name": "JESUS GARCIA",
@@ -919,7 +919,7 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
             logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
 
 def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: proveïdorContacte")
+    logging.info('New message: proveïdorContacte')
     """
     :param data: dict -> {
         "name": "Luis López",
@@ -963,7 +963,7 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
             logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
 
 def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    print ("New message: proveïdorCampsPersonalitzats")
+    logging.info('New message: proveïdorCampsPersonalitzats')
     """
     :param data: dict -> {
         "nif": "04537481H",
