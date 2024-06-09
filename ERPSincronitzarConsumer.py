@@ -824,8 +824,12 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
         if item is not None:
             data['countryId'] = item["id"]
-            data['dataProveedor']['countryId'] = item["id"]
-            data['dataCliente']['countryId'] = item["id"]
+            
+            dataProveedor = data['dataProveedor'].copy()
+            dataProveedor['countryId'] = item["id"]
+
+            dataCliente = data['dataCliente'].copy()
+            dataCliente['countryId'] = item["id"]
         else:
             logging.error('Error country not found:' + data['countryId'])
             return            
@@ -849,13 +853,13 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/provider
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=data['dataProveedor']['correlationId'], producerData=dataProveedorAux, data=data['dataProveedor'], filter_name="address", filter_value=str(data['dataProveedor']['address']).strip(), endPoint=endPoint, origin=origin)
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="address", filter_value=str(dataProveedor['address']).strip(), endPoint=endPoint, origin=origin)
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/provider
-                    if data['dataProveedor']['paymentMethodId'] != "":
-                        data['dataProveedor']['organizationAddressId'] = str(p_glam_address_id)
-                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=data['dataProveedor']['correlationId'], producerData=dataProveedorAux, data=data['dataProveedor'], filter_name="organizationAddressId", filter_value=str(data['dataProveedor']['organizationAddressId']).strip(), endPoint=endPoint, origin=origin)
+                    if dataProveedor['paymentMethodId'] != "":
+                        dataProveedor['organizationAddressId'] = str(p_glam_address_id)
+                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="organizationAddressId", filter_value=str(dataProveedor['organizationAddressId']).strip(), endPoint=endPoint, origin=origin)
 
             if data['accountC'] != "":
                 # The organization is a client too
@@ -863,13 +867,13 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
 
                 # We create an address for the organization/client
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=data['dataCliente']['correlationId'], producerData=dataClienteAux, data=data['dataCliente'], filter_name="address", filter_value=str(data['dataCliente']['address']).strip(), endPoint=endPoint, origin=origin)
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="address", filter_value=str(dataCliente['address']).strip(), endPoint=endPoint, origin=origin)
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/client
-                    if data['dataCliente']['paymentMethodId'] != "":
-                        data['dataCliente']['organizationAddressId'] = str(p_glam_address_id)
-                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=data['dataCliente']['correlationId'], producerData=dataClienteAux, data=data['dataCliente'], filter_name="organizationAddressId", filter_value=str(data['dataCliente']['organizationAddressId']).strip(), endPoint=endPoint, origin=origin)
+                    if dataCliente['paymentMethodId'] != "":
+                        dataCliente['organizationAddressId'] = str(p_glam_address_id)
+                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin)
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
