@@ -760,6 +760,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "accountP": "4004000013",
         "accountD": "4300042994",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "active": "YES",
         "correlationId": "06645940013",
         "dataProveedor": {	
             "name": "Domicili Fiscal",
@@ -841,13 +842,15 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
-            # Activate organization.
-            patch_data = {"action": "ChangeState", "stateId": 2}  # 2 = State active.
+            if data['active'] == "YES":
+                patch_data = {"action": "ChangeState", "stateId": 2}  # 2 = State active.
+            else:
+                patch_data = {"action": "ChangeState", "stateId": 3}  # 3 = Not active.
             req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id),
-                                    data=json.dumps(patch_data), headers=headers,
-                                    verify=False, timeout=CONN_TIMEOUT)
+                                 data=json.dumps(patch_data), headers=headers,
+                                 verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
-                logging.error('PATCH with error when activating organization with error: ' + str(req.status_code))
+                logging.error('PATCH with error when activating/deactivating organization with error: ' + str(req.status_code))
 
             if data['accountP'] != "":
                 # The organization is a provider too
