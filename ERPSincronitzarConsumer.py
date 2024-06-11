@@ -905,7 +905,7 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         if item is not None:
             organizationId = item["id"]
         else:
-            logging.error('Error organization not found:' + data['nameOrganization'])
+            logging.error('Error organization not found: ' + data['nameOrganization'])
             return            
 
     # Synchronize person
@@ -949,7 +949,7 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
         if item is not None:
             organizationId = item["id"]
         else:
-            logging.error('Error organization not found:' + data['nif'])
+            logging.error('Error organization not found: ' + data['nif'])
             return            
 
     # Synchronize person
@@ -997,7 +997,7 @@ def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, 
         if item is not None:
             organizationId = item["id"]
         else:
-            logging.error('Error organization not found:' + data['nif'])
+            logging.error('Error organization not found: ' + data['nif'])
             return            
 
     # We also need the account of the organization/provider
