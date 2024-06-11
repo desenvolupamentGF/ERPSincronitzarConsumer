@@ -48,6 +48,8 @@ URL_CONTACTS = "/contacts"
 URL_ADDRESS = "/address"
 URL_PAYMENTMETHODS = '/paymentMethods'
 URL_COMMERCIALCONDITIONS = '/commercialConditions'
+URL_CALENDARS = '/calendars'
+URL_HOLIDAYS = '/holidays'
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -1025,6 +1027,41 @@ def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, 
 
 ####################################################################################################
 
+def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    logging.info('New message: calendariLaboral')
+    """
+    :param data: dict -> {
+        "name": "GARCIA FAURA | Barcelona",
+        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "holidays": [
+                        {
+                            "date": "2024-01-01",
+                            "reasonId": 0
+                        },
+                        {
+                            "date": "2024-01-06",
+                            "reasonId": 0
+                        },
+                        ...
+                    ],
+        "correlationId": "6328f08b-5375-48f3-a9a0-449389546370"       
+    }
+    :return None
+    """
+
+    # Synchronize calendar
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+
+    if _has_been_posted is not None and _has_been_posted is True:
+        try:
+            for holiday in data["holidays"]:
+                synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS + '/' + str(p_glam_id) + URL_HOLIDAYS, correlation_id=holiday['correlationId'], producerData=holiday, data=holiday, filter_name="date", filter_value=str(holiday['date']).strip(), endPoint=endPoint, origin=origin)                
+
+        except Exception as err:
+            logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
+
+####################################################################################################
+
 def global_values():
     # Calculate access token and header for the request
     token = calculate_access_token(ENVIRONMENT)
@@ -1182,6 +1219,10 @@ def main():
                     sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
                 if data['queueType'] == "PROVEIDORS_CAMPSPERSONALITZATS":
                     sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
+
+                # Recursos Humans
+                if data['queueType'] == "RRHH_CALENDARISLABORALS":
+                    sync_calendarisLaborals(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
