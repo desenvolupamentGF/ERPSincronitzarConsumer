@@ -128,8 +128,14 @@ def disconnectSQLServer(db):
     except Exception as e:              
         None
 
-def replaceCharacters(text, list):
-    txt = text
+def replaceCharacters(text, list, uppercase):
+    if uppercase:
+        txt = txt.upper()
+    else:    
+        txt = text
+
+    # remove list of special characters
     for char in list:
         txt = txt.replace(char, '')
+
     return txt

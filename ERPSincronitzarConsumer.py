@@ -183,7 +183,7 @@ def get_value_from_database(mycursor, correlation_id: str, url, endPoint, origin
     return erpGFId, hash
 
 def update_value_from_database(dbOrigin, mycursor, correlation_id: str, erpGFId, hash, url, endPoint, origin, helper):
-    sql = "INSERT INTO gfintranet.ERPIntegration (companyId, endpoint, origin, correlationId, deploy, callType, erpGFId, hash, helper) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE erpGFId=VALUES(str(erpGFId)), hash=VALUES(str(hash)), helper=VALUES(str(helper))"
+    sql = "INSERT INTO gfintranet.ERPIntegration (companyId, endpoint, origin, correlationId, deploy, callType, erpGFId, hash, helper) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE erpGFId=VALUES(erpGFId), hash=VALUES(hash), helper=VALUES(helper)"
     val = (str(GLAMSUITE_DEFAULT_COMPANY_ID), str(endPoint), str(origin), str(correlation_id), str(ENVIRONMENT), str(url), str(erpGFId), str(hash), str(helper))
     mycursor.execute(sql, val)
     dbOrigin.commit()    
@@ -838,7 +838,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             return            
 
     # Synchronize organization
-    helper = replaceCharacters(data['legalName'], ['.',',','-',' '])
+    helper = replaceCharacters(data['legalName'], ['.',',','-',' '], True)
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper=helper)
     if _has_been_posted is not None and _has_been_posted is True:
         try:
