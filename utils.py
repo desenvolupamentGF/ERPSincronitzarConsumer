@@ -127,3 +127,9 @@ def disconnectSQLServer(db):
         db.close()
     except Exception as e:              
         None
+
+def replaceCharacters(text, list):
+    txt = text
+    for char in list:
+        txt = txt.replace(char, '')
+    return txt

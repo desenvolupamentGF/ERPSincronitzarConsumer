@@ -22,7 +22,7 @@ import pika
 import sys
 import datetime
 import time
-from utils import send_email, connectMySQL, disconnectMySQL
+from utils import send_email, connectMySQL, disconnectMySQL, replaceCharacters
 from utils import calculate_access_token, calculate_json_header
 import os
 
@@ -182,9 +182,9 @@ def get_value_from_database(mycursor, correlation_id: str, url, endPoint, origin
 
     return erpGFId, hash
 
-def update_value_from_database(dbOrigin, mycursor, correlation_id: str, erpGFId, hash, url, endPoint, origin):
-    sql = "INSERT INTO gfintranet.ERPIntegration (companyId, endpoint, origin, correlationId, deploy, callType, erpGFId, hash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE erpGFId=VALUES(erpGFId), hash=VALUES(hash)"
-    val = (str(GLAMSUITE_DEFAULT_COMPANY_ID), str(endPoint), str(origin), str(correlation_id), str(ENVIRONMENT), url, erpGFId, hash)
+def update_value_from_database(dbOrigin, mycursor, correlation_id: str, erpGFId, hash, url, endPoint, origin, helper):
+    sql = "INSERT INTO gfintranet.ERPIntegration (companyId, endpoint, origin, correlationId, deploy, callType, erpGFId, hash, helper) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE erpGFId=VALUES(str(erpGFId)), hash=VALUES(str(hash)), helper=VALUES(str(helper))"
+    val = (str(GLAMSUITE_DEFAULT_COMPANY_ID), str(endPoint), str(origin), str(correlation_id), str(ENVIRONMENT), str(url), str(erpGFId), str(hash), str(helper))
     mycursor.execute(sql, val)
     dbOrigin.commit()    
 
@@ -194,7 +194,7 @@ def delete_value_from_database(dbOrigin, mycursor, correlation_id: str, url, end
 
 ####################################################################################################
 
-def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str, producerData: dict, data: dict, filter_name: str = "", filter_value: str = "", endPoint = "", origin = ""):
+def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str, producerData: dict, data: dict, filter_name: str = "", filter_value: str = "", endPoint = "", origin = "", helper = ""):
     """
     Synchronize objects with the API.
     Always returns the specific Glam ID.
@@ -230,7 +230,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             p_glam_id = req.json()['userName']
         else:
             p_glam_id = req.json()['id']
-        update_value_from_database(dbOrigin, mycursor, correlation_id, p_glam_id, str(data_hash), url, endPoint, origin)
+        update_value_from_database(dbOrigin, mycursor, correlation_id, p_glam_id, str(data_hash), url, endPoint, origin, helper)
         return p_glam_id, True
     elif req.status_code == 204:
         delete_value_from_database(dbOrigin, mycursor, correlation_id, url, endPoint, origin)
@@ -252,7 +252,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                         id = str(item['userName'])
                     else:
                         id = str(item['id'])
-                    update_value_from_database(dbOrigin, mycursor, correlation_id, id, str(data_hash), url, endPoint, origin)
+                    update_value_from_database(dbOrigin, mycursor, correlation_id, id, str(data_hash), url, endPoint, origin, helper)
                     return id, True
                 else:
                     logging.error('Error posting to GlamSuite with ' + key)
@@ -308,7 +308,7 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
             data['active'] = "0" # Inactive
             
     # Synchronize users
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_USERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="userName", filter_value=str(data['userName']).strip(), endPoint=endPoint, origin=origin)
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_USERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="userName", filter_value=str(data['userName']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
@@ -337,7 +337,7 @@ def sync_departaments(dbOrigin, mycursor, headers, data: dict, endPoint, origin)
     :return None
     """
     # Synchronize department
-    synch_by_database(dbOrigin, mycursor, headers, url=URL_DEPARTMENTS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_DEPARTMENTS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
 def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
     logging.info('New message: treballador')
@@ -405,7 +405,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
             return            
 
     # Synchronize worker
-    _glam_worker_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    _glam_worker_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _glam_worker_id is not None:  
 
@@ -458,14 +458,14 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
             dataContract["departmentId"] = glam_department_id
 
             # Synchronize contract
-            _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=dataContract['contractNumber'], producerData=dataContract, data=dataContract, filter_name="contractNumber", filter_value=dataContract['contractNumber'], endPoint=endPoint, origin=origin)
+            _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=dataContract['contractNumber'], producerData=dataContract, data=dataContract, filter_name="contractNumber", filter_value=dataContract['contractNumber'], endPoint=endPoint, origin=origin, helper="")
 
         # Sync EPI location
         dataLocation = data['dataLocation']
         p_correlation_id = dataLocation['correlationId']
         p_gf_description = dataLocation['description']
         p_glam_id, nothing_to_do = synch_by_database(dbOrigin, mycursor, headers, url=URL_LOCATIONS, correlation_id=p_correlation_id,
-                                                     producerData=dataLocation, data=dataLocation, filter_name='code', filter_value=str(maskValue).strip(), endPoint=endPoint, origin=origin)
+                                                     producerData=dataLocation, data=dataLocation, filter_name='code', filter_value=str(maskValue).strip(), endPoint=endPoint, origin=origin, helper="")
         if p_glam_id is None:  # Synchronization error.
             return
 
@@ -509,7 +509,7 @@ def sync_families(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     }
     :return None
     """
-    synch_by_database(dbOrigin, mycursor, headers, url=URL_FAMILIES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_FAMILIES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
 def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
     logging.info('New message: project')
@@ -531,7 +531,7 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
     p_correlation_id = data['correlationId']
     p_gf_description = data['description']
     p_glam_id, nothing_to_do = synch_by_database(dbOrigin, mycursor, headers, url=URL_LOCATIONS, correlation_id=p_correlation_id,
-                                                 producerData=data, data=data, filter_name='code', filter_value=str(maskValue).strip(), endPoint=endPoint, origin=origin)
+                                                 producerData=data, data=data, filter_name='code', filter_value=str(maskValue).strip(), endPoint=endPoint, origin=origin, helper="")
     if p_glam_id is None:  # Synchronization error.
         return
 
@@ -604,7 +604,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     format_correlation_id = str(data['formats'][0]['formatCorrelationId']).strip()  # Donant per suposat que hi haurà mínim un.
 
     # Synchronize product.
-    _glam_product_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=data['code'], endPoint=endPoint, origin=origin)
+    _glam_product_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=data['code'], endPoint=endPoint, origin=origin, helper="")
 
     # Update
     if _glam_product_id is not None:
@@ -681,7 +681,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                 "quantity": 1
             }
             synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTS + '/' + str(_glam_product_id) + URL_FORMATS, correlation_id=format_correlation_id,
-                              producerData=sync_format_data, data=sync_format_data, filter_name="formatCode", filter_value=format_correlation_id, endPoint=endPoint, origin=origin)
+                              producerData=sync_format_data, data=sync_format_data, filter_name="formatCode", filter_value=format_correlation_id, endPoint=endPoint, origin=origin, helper="")
 
         except Exception as err:
             logging.error('Error synch: ' + URL_PRODUCTS + '/' + str(_glam_product_id) + URL_FORMATS + ":" + correlation_id + ' With error: ' + str(err))
@@ -746,7 +746,7 @@ def sync_paymentMethods(dbOrigin, mycursor, headers, data: dict, endPoint, origi
     }
     :return None
     """
-    synch_by_database(dbOrigin, mycursor, headers, url=URL_PAYMENTMETHODS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_PAYMENTMETHODS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
 def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: organization')
@@ -838,8 +838,8 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             return            
 
     # Synchronize organization
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
-
+    helper = replaceCharacters(data['legalName'], ['.',',','-',' '])
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper=helper)
     if _has_been_posted is not None and _has_been_posted is True:
         try:
             if data['active'] == "YES":
@@ -855,30 +855,30 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             if data['accountP'] != "":
                 # The organization is a provider too
                 post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
-                synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+                synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
 
                 # We create an address for the organization/provider
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="address", filter_value=str(dataProveedor['address']).strip(), endPoint=endPoint, origin=origin)
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="address", filter_value=str(dataProveedor['address']).strip(), endPoint=endPoint, origin=origin, helper="")
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/provider
                     if dataProveedor['paymentMethodId'] != "":
                         dataProveedor['organizationAddressId'] = str(p_glam_address_id)
-                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="organizationAddressId", filter_value=str(dataProveedor['organizationAddressId']).strip(), endPoint=endPoint, origin=origin)
+                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="organizationAddressId", filter_value=str(dataProveedor['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
 
             if data['accountC'] != "":
                 # The organization is a client too
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
-                synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin)
+                synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
 
                 # We create an address for the organization/client
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="address", filter_value=str(dataCliente['address']).strip(), endPoint=endPoint, origin=origin)
+                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="address", filter_value=str(dataCliente['address']).strip(), endPoint=endPoint, origin=origin, helper="")
 
                 if _address_has_been_posted is not None and _address_has_been_posted is True:
                     # Time to stablish the commercial conditions of the organization/client
                     if dataCliente['paymentMethodId'] != "":
                         dataCliente['organizationAddressId'] = str(p_glam_address_id)
-                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin)
+                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
@@ -914,7 +914,7 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
             return            
 
     # Synchronize person
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
@@ -958,7 +958,7 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
             return            
 
     # Synchronize person
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
@@ -1053,12 +1053,12 @@ def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, o
     """
 
     # Synchronize calendar
-    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin)
+    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
             for holiday in data["holidays"]:
-                synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS + '/' + str(p_glam_id) + URL_HOLIDAYS, correlation_id=holiday['correlationId'], producerData=holiday, data=holiday, filter_name="date", filter_value=str(holiday['date']).strip(), endPoint=endPoint, origin=origin)                
+                synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS + '/' + str(p_glam_id) + URL_HOLIDAYS, correlation_id=holiday['correlationId'], producerData=holiday, data=holiday, filter_name="date", filter_value=str(holiday['date']).strip(), endPoint=endPoint, origin=origin, helper="")                
 
         except Exception as err:
             logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
