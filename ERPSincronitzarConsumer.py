@@ -1048,7 +1048,7 @@ def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, o
                 synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS + '/' + str(p_glam_id) + URL_HOLIDAYS, correlation_id=holiday['correlationId'], producerData=holiday, data=holiday, filter_name="date", filter_value=str(holiday['date']).strip(), endPoint=endPoint, origin=origin, helper="")                
 
         except Exception as err:
-            logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
+            logging.error('Error when assigning holidays to the calendar with error: ' + str(err))          
 
 ####################################################################################################
 
