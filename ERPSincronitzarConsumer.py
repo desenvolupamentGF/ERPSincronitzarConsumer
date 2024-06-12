@@ -838,7 +838,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             return            
 
     # Synchronize organization
-    helper = replaceCharacters(data['legalName'], ['.',',','-',' '], True)
+    helper = replaceCharacters(data["legalName"], [".",",","-","'"," "], True)
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper=helper)
     if _has_been_posted is not None and _has_been_posted is True:
         try:
