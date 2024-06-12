@@ -912,7 +912,7 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
                 raise Exception('POST with error when assigning person as contact of the organization')
 
         except Exception as err:
-            logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
+            logging.error('Error when assigning person as contact of the organization/client with error: ' + str(err))          
 
 def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: proveïdorContacte')
@@ -956,7 +956,7 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
                 raise Exception('POST with error when assigning person as contact of the organization')
 
         except Exception as err:
-            logging.error('Error when assigning person as contact of the organization with error: ' + str(err))          
+            logging.error('Error when assigning person as contact of the organization/provider with error: ' + str(err))          
 
 def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: proveïdorCampsPersonalitzats')
