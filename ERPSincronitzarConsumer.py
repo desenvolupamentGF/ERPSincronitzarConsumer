@@ -888,7 +888,7 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     """
     :param data: dict -> {
         "name": "JESUS GARCIA",
-        "nameOrganization": "CEL URBÀ",
+        "organizationId": "bedbf4be-1ae1-4d33-6356-08dc80f1e342",
         "phone": "611448303",
         "email": "jgarcia@celurba.es",
         "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
@@ -899,27 +899,14 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     }
     :return None
     """
-
-    # We need to get the GUID for the organization
-    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nameOrganization']}", headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
     
-    if get_req.status_code == 200:                
-        item = next((i for i in get_req.json() if i["legalName"].casefold() == data['nameOrganization'].casefold()), None)
-
-        if item is not None:
-            organizationId = item["id"]
-        else:
-            logging.error('Error organization not found: ' + data['nameOrganization'])
-            return            
-
     # Synchronize person
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
         try:
             post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
-            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
+            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(data['organizationId']) + URL_CONTACTS, data=json.dumps(post_data),     
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 201:
                 raise Exception('POST with error when assigning person as contact of the organization')
