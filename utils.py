@@ -130,7 +130,7 @@ def disconnectSQLServer(db):
 
 def replaceCharacters(text, list, uppercase):
     if uppercase:
-        txt = txt.upper()
+        txt = text.upper()
     else:    
         txt = text
 
