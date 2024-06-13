@@ -50,6 +50,7 @@ URL_PAYMENTMETHODS = '/paymentMethods'
 URL_COMMERCIALCONDITIONS = '/commercialConditions'
 URL_CALENDARS = '/calendars'
 URL_HOLIDAYS = '/holidays'
+URL_CREDITRISKS = '/creditRisks'
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -807,6 +808,8 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             "paymentInAdvanceDiscount": "10",
             "finantialCost": "10",
             "shippingDays": 0,
+            "amount": "200000",
+            "insuranceCompany": "CESCE",
             "correlationId": "06645940013",            
             "paymentMethodId": "b5a489b7-b883-43b6-1871-08dc82d66c97"
         }
@@ -855,7 +858,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             if data['accountP'] != "":
                 # The organization is a provider too
                 post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
-                synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
+                p_glam_provider_id, _provider_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
 
                 # We create an address for the organization/provider
                 p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="address", filter_value=str(dataProveedor['address']).strip(), endPoint=endPoint, origin=origin, helper="")
@@ -869,7 +872,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             if data['accountC'] != "":
                 # The organization is a client too
                 post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
-                synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
+                p_glam_customer_id, _customer_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
 
                 # We create an address for the organization/client
                 p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="address", filter_value=str(dataCliente['address']).strip(), endPoint=endPoint, origin=origin, helper="")
@@ -879,6 +882,39 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                     if dataCliente['paymentMethodId'] != "":
                         dataCliente['organizationAddressId'] = str(p_glam_address_id)
                         synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+                # Obtain most recent credit risk of the organization/client
+                req_get = requests.get(
+                    url=URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS,
+                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                
+                amount = 0
+                insuranceCompany = ""
+                date = ""
+                if req_get.status_code == 200:
+                    # Need the details of the most recent date
+                    for i in req_get.json():
+                        if date == "" or datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date() > date:
+                            amount = i['amount']
+                            insuranceCompany = i['insuranceCompany']
+                            date = datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date()
+
+                    newRisk = False
+                    if date == "":
+                        newRisk = True
+                    else:
+                        if round(float(amount), 2) != round(float(dataCliente['amount']), 2) or insuranceCompany != dataCliente['insuranceCompany']:
+                            newRisk = True
+
+                    if newRisk:
+                        dataRisk = {"date": str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")), "amount": dataCliente['amount'], "insuranceCompany": dataCliente['insuranceCompany'], }
+                        url = URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS
+                        #data_hash = hash(str(dataRisk))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+                        data_hash = hashlib.sha256(str(dataRisk).encode('utf-8')).hexdigest()
+                        req = requests.post(url=url, data=json.dumps(dataRisk),     
+                                            headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                        if req.status_code == 201:                            
+                            update_value_from_database(dbOrigin, mycursor, req.json()['id'], p_glam_customer_id, str(data_hash), url, endPoint, origin, "")
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
