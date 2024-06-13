@@ -36,7 +36,6 @@ URL_CONTAINERS = '/containers'
 URL_PRODUCTS = '/products'
 URL_FORMATS = '/formats'
 URL_COSTS = '/standardCosts'
-URL_DEPARTMENTS = '/departments'
 URL_WORKERS = '/workers'
 URL_CONTRACTS = '/contracts'
 URL_USERS = '/users'
@@ -50,6 +49,8 @@ URL_PAYMENTMETHODS = '/paymentMethods'
 URL_COMMERCIALCONDITIONS = '/commercialConditions'
 URL_CALENDARS = '/calendars'
 URL_HOLIDAYS = '/holidays'
+URL_DEPARTMENTS = '/departments'
+URL_TIMETABLES = '/timetables'
 URL_CREDITRISKS = '/creditRisks'
 
 URL_ZONES = '/zones'
@@ -1086,6 +1087,34 @@ def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, o
         except Exception as err:
             logging.error('Error when assigning holidays to the calendar with error: ' + str(err))          
 
+def sync_departments(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    logging.info('New message: departments')
+    """
+    :param data: dict -> {
+        "name": "GARCIA FAURA | Barcelona",
+        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "correlationId": "6328f08b-5375-48f3-a9a0-449389546370"       
+    }
+    :return None
+    """
+
+    # Synchronize department
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_DEPARTMENTS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+def sync_timetables(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    logging.info('New message: timetables')
+    """
+    :param data: dict -> {
+        "name": "GARCIA FAURA | Barcelona",
+        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "correlationId": "6328f08b-5375-48f3-a9a0-449389546370"       
+    }
+    :return None
+    """
+
+    # Synchronize timetable
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_TIMETABLES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
+
 ####################################################################################################
 
 def global_values():
@@ -1249,6 +1278,10 @@ def main():
                 # Recursos Humans
                 if data['queueType'] == "RRHH_CALENDARISLABORALS":
                     sync_calendarisLaborals(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
+                if data['queueType'] == "RRHH_DEPARTMENTS":
+                    sync_departments(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
+                if data['queueType'] == "RRHH_TIMETABLES":
+                    sync_timetables(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
