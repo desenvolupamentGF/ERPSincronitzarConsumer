@@ -1057,7 +1057,7 @@ def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, 
 def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: calendariLaboral')
     """
-    :param data: dict -> {
+    :param data: dict -> [{
         "name": "GARCIA FAURA | Barcelona",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "holidays": [
@@ -1072,7 +1072,7 @@ def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, o
                         ...
                     ],
         "correlationId": "6328f08b-5375-48f3-a9a0-449389546370"       
-    }
+    }] X N
     :return None
     """
 
@@ -1090,11 +1090,11 @@ def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, o
 def sync_departments(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: departments')
     """
-    :param data: dict -> {
-        "name": "GARCIA FAURA | Barcelona",
+    :param data: dict -> [{
+        "name": "Control estratègic I Compres",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "correlationId": "6328f08b-5375-48f3-a9a0-449389546370"       
-    }
+        "correlationId": "056c8fae-5d21-4444-904e-2f8386725ab9"       
+    }] X N
     :return None
     """
 
@@ -1104,11 +1104,11 @@ def sync_departments(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 def sync_timetables(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: timetables')
     """
-    :param data: dict -> {
-        "name": "GARCIA FAURA | Barcelona",
+    :param data: dict -> [{
+        "name": "Jornada parcial | 5 h",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "correlationId": "6328f08b-5375-48f3-a9a0-449389546370"       
-    }
+        "correlationId": "2fcd866f-5a0d-4497-b275-84bafe75322d"       
+    }] X N
     :return None
     """
 
