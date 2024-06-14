@@ -884,38 +884,45 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                         dataCliente['organizationAddressId'] = str(p_glam_address_id)
                         synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
 
-                # Obtain most recent credit risk of the organization/client
-                req_get = requests.get(
-                    url=URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS,
-                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                creditRisk = round(float(dataCliente['amount']), 2)
+                if creditRisk != round(float(0), 2): # if 0 means that we don't really have a real value for the risk so we don't sync any value
+                    None
+                else:
+                    if creditRisk == round(float(-1), 2): # if -1 means that the insurance company said the risk is 0
+                        creditRisk = round(float(0), 2)
+
+                    # Obtain most recent credit risk of the organization/client
+                    req_get = requests.get(
+                        url=URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS,
+                        headers=headers, verify=False, timeout=CONN_TIMEOUT)
                 
-                amount = 0
-                insuranceCompany = ""
-                date = ""
-                if req_get.status_code == 200:
-                    # Need the details of the most recent date
-                    for i in req_get.json():
-                        if date == "" or datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date() > date:
-                            amount = i['amount']
-                            insuranceCompany = i['insuranceCompany']
-                            date = datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date()
+                    amount = 0
+                    insuranceCompany = ""
+                    date = ""
+                    if req_get.status_code == 200:
+                        # Need the details of the most recent date
+                        for i in req_get.json():
+                            if date == "" or datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date() > date:
+                                amount = i['amount']
+                                insuranceCompany = i['insuranceCompany']
+                                date = datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date()
 
-                    newRisk = False
-                    if date == "":
-                        newRisk = True
-                    else:
-                        if round(float(amount), 2) != round(float(dataCliente['amount']), 2) or insuranceCompany != dataCliente['insuranceCompany']:
+                        newRisk = False
+                        if date == "":
                             newRisk = True
+                        else:
+                            if round(float(amount), 2) != creditRisk or insuranceCompany != dataCliente['insuranceCompany']:
+                                newRisk = True
 
-                    if newRisk:
-                        dataRisk = {"date": str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")), "amount": dataCliente['amount'], "insuranceCompany": dataCliente['insuranceCompany'], }
-                        url = URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS
-                        #data_hash = hash(str(dataRisk))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
-                        data_hash = hashlib.sha256(str(dataRisk).encode('utf-8')).hexdigest()
-                        req = requests.post(url=url, data=json.dumps(dataRisk),     
-                                            headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                        if req.status_code == 201:                            
-                            update_value_from_database(dbOrigin, mycursor, req.json()['id'], p_glam_customer_id, str(data_hash), url, endPoint, origin, "")
+                        if newRisk:
+                            dataRisk = {"date": str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")), "amount": str(creditRisk), "insuranceCompany": dataCliente['insuranceCompany'], }
+                            url = URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS
+                            #data_hash = hash(str(dataRisk))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+                            data_hash = hashlib.sha256(str(dataRisk).encode('utf-8')).hexdigest()
+                            req = requests.post(url=url, data=json.dumps(dataRisk),     
+                                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                            if req.status_code == 201:                            
+                                update_value_from_database(dbOrigin, mycursor, req.json()['id'], p_glam_customer_id, str(data_hash), url, endPoint, origin, "")
 
         except Exception as err:
             logging.error('Error synch activating organization with error: ' + str(err))          
