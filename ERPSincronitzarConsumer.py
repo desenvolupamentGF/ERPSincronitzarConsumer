@@ -893,7 +893,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
                     # Obtain most recent credit risk of the organization/client
                     req_get = requests.get(
-                        url=URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS,
+                        url=URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS + "?o=date,desc", # descending order by data
                         headers=headers, verify=False, timeout=CONN_TIMEOUT)
                 
                     amount = 0
@@ -902,10 +902,10 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                     if req_get.status_code == 200:
                         # Need the details of the most recent date
                         for i in req_get.json():
-                            if date == "" or datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date() > date:
-                                amount = i['amount']
-                                insuranceCompany = i['insuranceCompany']
-                                date = datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date()
+                            amount = i['amount']
+                            insuranceCompany = i['insuranceCompany']
+                            date = datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date()
+                            break # first retrieved credit risk is the one I need cos the descending order by date
 
                         newRisk = False
                         if date == "":
