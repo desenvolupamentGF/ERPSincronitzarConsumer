@@ -885,7 +885,7 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                         synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
 
                 creditRisk = round(float(dataCliente['amount']), 2)
-                if creditRisk != round(float(0), 2): # if 0 means that we don't really have a real value for the risk so we don't sync any value
+                if creditRisk == round(float(0), 2): # if 0 means that we don't really have a real value for the risk so we don't sync any value
                     None
                 else:
                     if creditRisk == round(float(-1), 2): # if -1 means that the insurance company said the risk is 0
