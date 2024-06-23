@@ -916,10 +916,10 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
 
                         if newRisk:
                             dataRisk = {"date": str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")), "amount": str(creditRisk), "insuranceCompany": dataCliente['insuranceCompany'], }
-                            url = URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS
+                            url = URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS
                             #data_hash = hash(str(dataRisk))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
                             data_hash = hashlib.sha256(str(dataRisk).encode('utf-8')).hexdigest()
-                            req = requests.post(url=url, data=json.dumps(dataRisk),     
+                            req = requests.post(url=URL_API + url, data=json.dumps(dataRisk),     
                                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
                             if req.status_code == 201:                            
                                 update_value_from_database(dbOrigin, mycursor, req.json()['id'], p_glam_customer_id, str(data_hash), url, endPoint, origin, "")
