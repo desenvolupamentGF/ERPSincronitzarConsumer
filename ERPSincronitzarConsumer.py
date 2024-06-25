@@ -51,6 +51,7 @@ URL_CALENDARS = '/calendars'
 URL_HOLIDAYS = '/holidays'
 URL_DEPARTMENTS = '/departments'
 URL_TIMETABLES = '/timetables'
+URL_WORKFORCES = '/workforces'
 URL_CREDITRISKS = '/creditRisks'
 
 URL_ZONES = '/zones'
@@ -1122,6 +1123,20 @@ def sync_timetables(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     # Synchronize timetable
     synch_by_database(dbOrigin, mycursor, headers, url=URL_TIMETABLES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
+def sync_workforces(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    logging.info('New message: workforces')
+    """
+    :param data: dict -> [{
+        "name": "Tècnic Senior RRHH",
+        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+        "correlationId": "Tècnic Senior RRHH"       
+    }] X N
+    :return None
+    """
+
+    # Synchronize timetable
+    synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKFORCES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
+
 ####################################################################################################
 
 def global_values():
@@ -1289,6 +1304,8 @@ def main():
                     sync_departments(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
                 if data['queueType'] == "RRHH_TIMETABLES":
                     sync_timetables(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
+                if data['queueType'] == "RRHH_WORKFORCES":
+                    sync_workforces(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
