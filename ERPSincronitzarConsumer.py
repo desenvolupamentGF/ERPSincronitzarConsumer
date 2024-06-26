@@ -328,20 +328,6 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 
 ####################################################################################################
 
-def sync_departaments(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    logging.info('New message: departament')
-    """
-    :param data: dict -> {
-        "name": "COMERCIAL",
-        "companyId": GLAMSUITE_DEFAULT_COMPANY_ID,
-        "calendarId": GLAMSUITE_DEFAULT_CALENDAR_ID,
-        "correlationId": "7"
-    }
-    :return None
-    """
-    # Synchronize department
-    synch_by_database(dbOrigin, mycursor, headers, url=URL_DEPARTMENTS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
-
 def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
     logging.info('New message: treballador')
     """
@@ -1275,11 +1261,9 @@ def main():
                     sync_products(dbOrigin, mycursor, headers, data, 'Mercaderies ERP GF', 'Emmegi')
 
                 # Treballadors
-                if data['queueType'] == "TREBALLADORS_DEPARTAMENTS":
-                    sync_departaments(dbOrigin, mycursor, headers, data, 'Treballadors ERP GF', 'Biostar')
                 if data['queueType'] == "TREBALLADORS_TREBALLADORS":
                     maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
-                    sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, 'Treballadors ERP GF', 'Biostar')
+                    sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, 'Treballadors ERP GF', 'Sesame/Sage')
                 
                 # Usuaris
                 if data['queueType'] == "USERS_USERS":
