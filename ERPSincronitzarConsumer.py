@@ -1129,7 +1129,7 @@ def sync_workforces(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     :param data: dict -> [{
         "name": "Tècnic Senior RRHH",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "correlationId": "Tècnic Senior RRHH"       
+        "correlationId": "142972df79b39d5b282f53837cc506bd0c7c7cf85aedcea5b07550d07e90de88"       
     }] X N
     :return None
     """
