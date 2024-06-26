@@ -358,7 +358,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         "startDate": "2024-02-22T12:38:41.440Z",
         "endDate": "2024-02-22T12:38:41.440Z",
         "departmentId": departmentId,
-        "workforceId": "",
+        "workforceId": "bb77ac13-ce25-47e5-012d-08dc63a1661a",
         "workingHours": 40,
         "correlationId": "533"
     }
