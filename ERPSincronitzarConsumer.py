@@ -38,6 +38,7 @@ URL_FORMATS = '/formats'
 URL_COSTS = '/standardCosts'
 URL_WORKERS = '/workers'
 URL_CONTRACTS = '/contracts'
+URL_SALARIES = '/salaries'
 URL_USERS = '/users'
 URL_ORGANIZATIONS = '/organizations'
 URL_PROVIDERS = '/providers'
@@ -346,11 +347,14 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         "iban": "ESXXXXXXXXXXXXXXXXXXXXXX",
         "costs": [
             {
-                "exercise": "2020",
-                "cost": 30000
+                "date": "2024-06-27T06:07:21.492Z",
+                "annualGrossSalary": 30000,
+                "annualSocialSecurityContribution": 2000,
+                "annualOtherExpenses": 0,
+                "correlationId": "46457469E"                
             }
         ],        
-        "correlationId": "533"
+        "correlationId": "46457469E"
     },
     :param dataContract: dict -> {
         "contractNumber": "100/21",
@@ -358,9 +362,10 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         "startDate": "2024-02-22T12:38:41.440Z",
         "endDate": "2024-02-22T12:38:41.440Z",
         "departmentId": "Logística",
-        "workforceId": "bb77ac13-ce25-47e5-012d-08dc63a1661a",
-        "workingHours": 40,
-        "correlationId": "533"
+        "workforceId": "Cap de departament",
+        "calendarId": "1598773e-cf84-4cc0-9cc0-08dc339cf820",
+        "annualWorkingHours": 1920,
+        "correlationId": "46457469E"
     }
     :return None
     """
@@ -421,30 +426,40 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                 logging.error('Error sync:' + URL_WORKERS + ":" + str(_glam_worker_id) + " With error: " + str(err))
 
         if _has_been_posted is not None and _has_been_posted is True:
-
             # Sync worker costs
-            try:
-                patch_data = {"costs": data['costs']}   
-                req = requests.patch(url=URL_API + URL_WORKERS + '/' + str(_glam_worker_id),
-                                     data=json.dumps(patch_data), headers=headers,
-                                     verify=False, timeout=CONN_TIMEOUT)
-                if req.status_code != 200:
-                    raise Exception('PATCH with error when processing costs')
-            except Exception as err:
-                logging.error('Error synch: ' + URL_WORKERS + ':' + str(_glam_worker_id) + " With error: " + str(err))
+            costs = data['costs']   
+            for cost in costs:
+                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_SALARIES, correlation_id=cost['date'], producerData=cost, data=cost, filter_name="date", filter_value=cost['date'], endPoint=endPoint, origin=origin, helper="")
 
         # Sync worker contract
         dataContract = data['dataContract']
         if dataContract['contractNumber'] != "":
 
-            # Get Glam Department id
-            glam_department_id, nothing_to_do = get_value_from_database(mycursor, correlation_id=dataContract['departmentId'], url=URL_DEPARTMENTS, endPoint=endPoint, origin=origin)
-            if glam_department_id is None:
-                logging.error('Error sync:' + URL_CONTRACTS + ":" + str(dataContract['contractNumber']) + 
-                              " Missing department: " + URL_DEPARTMENTS + ":" + str(dataContract['departmentId']))
-                return
+            # We need the GUID for the department
+            get_req = requests.get(URL_API + URL_DEPARTMENTS + f"?search={dataContract['departmentId']}", headers=headers,
+                                   verify=False, timeout=CONN_TIMEOUT)
+    
+            if get_req.status_code == 200:                
+                item = next((i for i in get_req.json() if i["name"].casefold() == dataContract['departmentId'].casefold()), None)
 
-            dataContract["departmentId"] = glam_department_id
+                if item is not None:
+                    dataContract['departmentId'] = item["id"]
+                else:
+                    logging.error('Error department not found:' + dataContract['departmentId'])
+                    return            
+
+            # We need the GUID for the workforce
+            get_req = requests.get(URL_API + URL_WORKFORCES + f"?search={dataContract['workforceId']}", headers=headers,
+                                   verify=False, timeout=CONN_TIMEOUT)
+    
+            if get_req.status_code == 200:                
+                item = next((i for i in get_req.json() if i["name"].casefold() == dataContract['workforceId'].casefold()), None)
+
+                if item is not None:
+                    dataContract['workforceId'] = item["id"]
+                else:
+                    logging.error('Error workforce not found:' + dataContract['workforceId'])
+                    return            
 
             # Synchronize contract
             _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=dataContract['contractNumber'], producerData=dataContract, data=dataContract, filter_name="contractNumber", filter_value=dataContract['contractNumber'], endPoint=endPoint, origin=origin, helper="")
@@ -949,18 +964,31 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
     logging.info('New message: proveïdorContacte')
     """
     :param data: dict -> {
-        "name": "Luis López",
-        "nif": "B81147951",
-        "phone": "620145093",
-        "email": "l.lopez@extol.es",
+        "name": "a.forcadellaccessoris@gmail.com",
+        "nif": "B65574121",
+        "phone": "No informat",
+        "email": "a.forcadellaccessoris@gmail.com",
         "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
-        "position": "Director comercial",
+        "position": "Atenció al client (enviament de comandes)",
         "comments": "",
-        "correlationId": "CONTACTE_1"                       
+        "correlationId": "2"                       
     }
     :return None
     """
+
+    # We need to check that the contact is not already created
+    get_req = requests.get(URL_API + URL_PERSONS + f"?search={data['email']}", headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+    if get_req.status_code == 200:                
+        item = next((i for i in get_req.json() if i['email'].casefold() == data['email'].casefold()), None)
+
+        if item is not None:
+            logging.warning('Person already exists. Skip to next one.')
+            return
+    else:
+        logging.error('Search for the person failed, check why: ' + str(data['email']) + ' ' + str(data['nif']))
+        return 
 
     # We need to get the GUID for the organization
     get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
@@ -989,62 +1017,116 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
         except Exception as err:
             logging.error('Error when assigning person as contact of the organization/provider with error: ' + str(err))          
 
-def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    logging.info('New message: proveïdorCampsPersonalitzats')
-    """
-    :param data: dict -> {
-        "nif": "04537481H",
-        "tipus": "B",
-        "pagaments": "A",
-        "lliurament": "C",
-        "preus": "A",
-        "familia": "XAPES ALUMINI",
-        "producte": "XAPES ALUMINI, PERFILS ALUMINI",
-        "enviamentComandes": "lpascual@aalco.es",
-        "reclamacions": "lpascual@aalco.es",
-        "reclamacionsUrgents": "lpascual@aalco.es",
-        "reclamacionsCritiques": "lpascual@aalco.es",        
-        "web": "www.alumisan.com",        
-        "correlationId": "PERSONALITZAT_1"                        
-    }
-    :return None
-    """
-
-    # We need to get the GUID for the organization
-    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-    
-    if get_req.status_code == 200:                
-        item = next((i for i in get_req.json() if i["identificationType"]["number"].casefold() == data['nif'].casefold()), None)
-
-        if item is not None:
-            organizationId = item["id"]
-        else:
-            logging.error('Error organization not found: ' + data['nif'])
-            return            
-
-    # We also need the account of the organization/provider
-    try:
-        get_req = requests.get(URL_API + URL_PROVIDERS + '/' + str(organizationId), headers=headers,
-                               verify=False, timeout=CONN_TIMEOUT)
-        if get_req.status_code == 404:
-            logging.error('Error account of the organization/provider not found')          
-            return
-        else:
-            account = get_req.json()['account']
-    except Exception as err:
-        logging.error('Error when retreaving account of the organization/provider with error: ' + str(err))          
-        return
-
-    try:
-        post_data = {"account": str(account), "customerCode": "", "customFieldValues": data} 
-        req = requests.put(url=URL_API + URL_PROVIDERS + '/' + str(organizationId), data=json.dumps(post_data),     
-                           headers=headers, verify=False, timeout=CONN_TIMEOUT)
-        if req.status_code != 200:
-            raise Exception('PUT with error when assigning personalized fields to the organization')
-
-    except Exception as err:
-        logging.error('Error when assigning personalized fields to the organization with error: ' + str(err))          
+# INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024)  
+#
+#
+#def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+#    logging.info('New message: proveïdorContacte')
+#    """
+#    :param data: dict -> {
+#        "name": "Luis López",
+#        "nif": "B81147951",
+#        "phone": "620145093",
+#        "email": "l.lopez@extol.es",
+#        "languageId": "cbc36b65-e9af-4bf7-8146-08dc32d2fd05",
+#        "companyId": "2492b776-1548-4485-3019-08dc339adb32",
+#        "position": "Director comercial",
+#        "comments": "",
+#        "correlationId": "CONTACTE_1"                       
+#    }
+#    :return None
+#    """
+#
+#    # We need to get the GUID for the organization
+#    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
+#                           verify=False, timeout=CONN_TIMEOUT)
+#    
+#    if get_req.status_code == 200:                
+#        item = next((i for i in get_req.json() if i["identificationType"]["number"].casefold() == data['nif'].casefold()), None)
+#
+#        if item is not None:
+#            organizationId = item["id"]
+#        else:
+#            logging.error('Error organization not found: ' + data['nif'])
+#            return            
+#
+#    # Synchronize person
+#    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
+#
+#    if _has_been_posted is not None and _has_been_posted is True:
+#        try:
+#            post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
+#            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
+#                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
+#            if req.status_code != 201:
+#                raise Exception('POST with error when assigning person as contact of the organization')
+#
+#        except Exception as err:
+#            logging.error('Error when assigning person as contact of the organization/provider with error: ' + str(err))          
+#
+#def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+#    logging.info('New message: proveïdorCampsPersonalitzats')
+#    """
+#    :param data: dict -> {
+#        "nif": "04537481H",
+#        "tipus": "B",
+#        "pagaments": "A",
+#        "lliurament": "C",
+#        "preus": "A",
+#        "familia": "XAPES ALUMINI",
+#        "producte": "XAPES ALUMINI, PERFILS ALUMINI",
+#        "enviamentComandes": "lpascual@aalco.es",
+#        "reclamacions": "lpascual@aalco.es",
+#        "reclamacionsUrgents": "lpascual@aalco.es",
+#        "reclamacionsCritiques": "lpascual@aalco.es",        
+#        "web": "www.alumisan.com",        
+#        "correlationId": "PERSONALITZAT_1"                        
+#    }
+#    :return None
+#    """
+#
+#    # We need to get the GUID for the organization
+#    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
+#                           verify=False, timeout=CONN_TIMEOUT)
+#    
+#    if get_req.status_code == 200:                
+#        item = next((i for i in get_req.json() if i["identificationType"]["number"].casefold() == data['nif'].casefold()), None)
+#
+#        if item is not None:
+#            organizationId = item["id"]
+#        else:
+#            logging.error('Error organization not found: ' + data['nif'])
+#            return            
+#
+#    # We also need the account of the organization/provider
+#    try:
+#        get_req = requests.get(URL_API + URL_PROVIDERS + '/' + str(organizationId), headers=headers,
+#                               verify=False, timeout=CONN_TIMEOUT)
+#        if get_req.status_code == 404:
+#            logging.error('Error account of the organization/provider not found')          
+#            return
+#        else:
+#            account = get_req.json()['account']
+#    except Exception as err:
+#        logging.error('Error when retreaving account of the organization/provider with error: ' + str(err))          
+#        return
+#
+#    try:
+#        post_data = {"account": str(account), "customerCode": "", "customFieldValues": data} 
+#        req = requests.put(url=URL_API + URL_PROVIDERS + '/' + str(organizationId), data=json.dumps(post_data),     
+#                           headers=headers, verify=False, timeout=CONN_TIMEOUT)
+#        if req.status_code != 200:
+#            raise Exception('PUT with error when assigning personalized fields to the organization')
+#        else:
+#            #data_hash = hash(str(data))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+#            data_hash = hashlib.sha256(str(data).encode('utf-8')).hexdigest()
+#            update_value_from_database(dbOrigin, mycursor, data['correlationId'], str(req.json()['id']), str(data_hash), URL_PERSONS, endPoint, origin, "")
+#
+#    except Exception as err:
+#        logging.error('Error when assigning personalized fields to the organization with error: ' + str(err))          
+#
+#
+# FINAL CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024) 
 
 ####################################################################################################
 
@@ -1277,9 +1359,17 @@ def main():
                 if data['queueType'] == "CLIENTS_CONTACTES":
                     sync_clientsContactes(dbOrigin, mycursor, headers, data, 'Clients ERP GF', 'Pipedrive')
                 if data['queueType'] == "PROVEIDORS_CONTACTES":
-                    sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
-                if data['queueType'] == "PROVEIDORS_CAMPSPERSONALITZATS":
-                    sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
+                    sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Emmegi/GFIntranet')
+                # INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024) 
+                # 
+                #                    
+                #if data['queueType'] == "PROVEIDORS_CONTACTES":
+                #    sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
+                #if data['queueType'] == "PROVEIDORS_CAMPSPERSONALITZATS":
+                #    sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
+                #
+                #
+                # FINAL CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024)                  
 
                 # Recursos Humans
                 if data['queueType'] == "RRHH_CALENDARISLABORALS":
