@@ -365,6 +365,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         "workforceId": "Cap de departament",
         "calendarId": "1598773e-cf84-4cc0-9cc0-08dc339cf820",
         "annualWorkingHours": 1920,
+        "timetableId": "aa315dbb-11d5-4feb-c106-08dc8bc773d2",
         "correlationId": "46457469E"
     }
     :return None
