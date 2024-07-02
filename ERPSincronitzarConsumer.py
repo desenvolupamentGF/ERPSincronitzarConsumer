@@ -986,6 +986,9 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
         item = next((i for i in get_req.json() if i['email'].casefold() == data['email'].casefold()), None)
 
         if item is not None:
+            #data_hash = hash(str(data))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+            data_hash = hashlib.sha256(str(data).encode('utf-8')).hexdigest()
+            update_value_from_database(dbOrigin, mycursor, data['correlationId'], "", str(data_hash), URL_PERSONS, endPoint, origin, "")
             logging.warning('Person already exists. Skip to next one.')
             return
     else:
