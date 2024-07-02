@@ -61,6 +61,7 @@ URL_PLANTS = '/plants'
 URL_GEOLOCATIONS = '/geolocations'
 
 URL_COUNTRIES = '/countries'
+URL_CUSTOMFIELDS = '/customFields'
 
 # Glam Suite constants
 GLAMSUITE_DEFAULT_COMPANY_ID = os.environ['GLAMSUITE_DEFAULT_COMPANY_ID']
@@ -1021,7 +1022,7 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 # INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024)  
 #
 #
-#def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+#def sync_proveidorsContactes_temp(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 #    logging.info('New message: proveïdorContacte')
 #    """
 #    :param data: dict -> {
@@ -1038,6 +1039,19 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #    :return None
 #    """
 #
+#    # We need to check that the contact is not already created
+#    get_req = requests.get(URL_API + URL_PERSONS + f"?search={data['email']}", headers=headers,
+#                           verify=False, timeout=CONN_TIMEOUT)
+#    if get_req.status_code == 200:                
+#        item = next((i for i in get_req.json() if i['email'].casefold() == data['email'].casefold()), None)
+#
+#        if item is not None:
+#            logging.warning('Person already exists. Skip to next one.')
+#            return
+#    else:
+#        logging.error('Search for the person failed, check why: ' + str(data['email']) + ' ' + str(data['nif']))
+#        return 
+#    
 #    # We need to get the GUID for the organization
 #    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
 #                           verify=False, timeout=CONN_TIMEOUT)
@@ -1065,26 +1079,82 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #        except Exception as err:
 #            logging.error('Error when assigning person as contact of the organization/provider with error: ' + str(err))          
 #
-#def sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+#def sync_proveidorsCampsPersonalitzats_temp(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 #    logging.info('New message: proveïdorCampsPersonalitzats')
 #    """
 #    :param data: dict -> {
 #        "nif": "04537481H",
-#        "tipus": "B",
-#        "pagaments": "A",
-#        "lliurament": "C",
-#        "preus": "A",
-#        "familia": "XAPES ALUMINI",
-#        "producte": "XAPES ALUMINI, PERFILS ALUMINI",
-#        "enviamentComandes": "lpascual@aalco.es",
-#        "reclamacions": "lpascual@aalco.es",
-#        "reclamacionsUrgents": "lpascual@aalco.es",
-#        "reclamacionsCritiques": "lpascual@aalco.es",        
-#        "web": "www.alumisan.com",        
+#        "Tipus_ABC": "4665e311-b6d6-45d1-fe25-08dc985fd06e",
+#        "Pagaments_ABC": "ccf5acab-c803-4666-fe28-08dc985fd06e",
+#        "Terminis_de_lliurament_ABC": "d7484937-5c20-4074-fe2b-08dc985fd06e",
+#        "Preus_ABC": "a6cea6c7-59ac-4fc5-fe2e-08dc985fd06e",
+#        "Família": "XAPES ALUMINI",
+#        "Producte": "XAPES ALUMINI, PERFILS ALUMINI",
+#        "Fàbrica": "Aluminios Andalucía",
+#        "Web": "www.alumisan.com",        
 #        "correlationId": "PERSONALITZAT_1"                        
 #    }
 #    :return None
 #    """
+#
+#    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
+#
+#    # We need to get the GUID for the "Família" (or create it if not existing)
+#    if data['Família'] != "":
+#        get_req = requests.get(URL_API + URL_CUSTOMFIELDS + "/" + "e26740a3-fbf5-43b7-547e-08dc985fcbef" + "/values", headers=headers,
+#                               verify=False, timeout=CONN_TIMEOUT)
+#    
+#        if get_req.status_code == 200:                
+#            item = next((i for i in get_req.json() if i["name"].casefold() == data['Família'].casefold()), None)
+#
+#            if item is not None:
+#                data['Família'] = item["id"]
+#            else:
+#                post_data = {"name": data['Família']} 
+#                req = requests.post(url=URL_API + URL_CUSTOMFIELDS + '/' + "e26740a3-fbf5-43b7-547e-08dc985fcbef" + "/values", data=json.dumps(post_data),     
+#                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+#                if req.status_code != 201:
+#                    raise Exception('POST with error when creating "Família": ' + str(data['Família']))
+#                else:
+#                    data['Família'] = str(req.json()['id'])
+#
+#    # We need to get the GUID for the "Producte" (or create it if not existing)
+#    if data['Producte'] != "":
+#        get_req = requests.get(URL_API + URL_CUSTOMFIELDS + "/" + "697b054c-aa25-462a-547f-08dc985fcbef" + "/values", headers=headers,
+#                               verify=False, timeout=CONN_TIMEOUT)
+#    
+#        if get_req.status_code == 200:                
+#            item = next((i for i in get_req.json() if i["name"].casefold() == data['Producte'].casefold()), None)
+#
+#            if item is not None:
+#                data['Producte'] = item["id"]
+#            else:
+#                post_data = {"name": data['Producte']} 
+#                req = requests.post(url=URL_API + URL_CUSTOMFIELDS + '/' + "697b054c-aa25-462a-547f-08dc985fcbef" + "/values", data=json.dumps(post_data),     
+#                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+#                if req.status_code != 201:
+#                    raise Exception('POST with error when creating "Producte": ' + str(data['Producte']))
+#                else:
+#                    data['Producte'] = str(req.json()['id'])
+#
+#    # We need to get the GUID for the "Fàbrica" (or create it if not existing)
+#    if data['Fàbrica'] != "":
+#        get_req = requests.get(URL_API + URL_CUSTOMFIELDS + "/" + "9dbac501-4faf-453d-5480-08dc985fcbef" + "/values", headers=headers,
+#                               verify=False, timeout=CONN_TIMEOUT)
+#    
+#        if get_req.status_code == 200:                
+#            item = next((i for i in get_req.json() if i["name"].casefold() == data['Fàbrica'].casefold()), None)
+#
+#            if item is not None:
+#                data['Fàbrica'] = item["id"]
+#            else:
+#                post_data = {"name": data['Fàbrica']} 
+#                req = requests.post(url=URL_API + URL_CUSTOMFIELDS + '/' + "9dbac501-4faf-453d-5480-08dc985fcbef" + "/values", data=json.dumps(post_data),     
+#                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+#                if req.status_code != 201:
+#                    raise Exception('POST with error when creating "Fàbrica": ' + str(data['Fàbrica']))
+#                else:
+#                    data['Fàbrica'] = str(req.json()['id'])
 #
 #    # We need to get the GUID for the organization
 #    get_req = requests.get(URL_API + URL_ORGANIZATIONS + f"?search={data['nif']}", headers=headers,
@@ -1119,8 +1189,8 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #        if req.status_code != 200:
 #            raise Exception('PUT with error when assigning personalized fields to the organization')
 #        else:
-#            #data_hash = hash(str(data))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
-#            data_hash = hashlib.sha256(str(data).encode('utf-8')).hexdigest()
+#            #data_hash = hash(str(dataAux))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+#            data_hash = hashlib.sha256(str(dataAux).encode('utf-8')).hexdigest()
 #            update_value_from_database(dbOrigin, mycursor, data['correlationId'], str(req.json()['id']), str(data_hash), URL_PERSONS, endPoint, origin, "")
 #
 #    except Exception as err:
@@ -1364,10 +1434,10 @@ def main():
                 # INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024) 
                 # 
                 #                    
-                #if data['queueType'] == "PROVEIDORS_CONTACTES":
-                #    sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
-                #if data['queueType'] == "PROVEIDORS_CAMPSPERSONALITZATS":
-                #    sync_proveidorsCampsPersonalitzats(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
+                #if data['queueType'] == "PROVEIDORS_CONTACTES_TEMP":
+                #    sync_proveidorsContactes_temp(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
+                #if data['queueType'] == "PROVEIDORS_CAMPSPERSONALITZATS_TEMP":
+                #    sync_proveidorsCampsPersonalitzats_temp(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Excel')
                 #
                 #
                 # FINAL CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024)                  
