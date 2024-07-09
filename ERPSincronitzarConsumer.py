@@ -295,6 +295,7 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
         "email": "aezcurra@garciafaura.com",
         "active": "1",
         "phoneNumber": "93 662 14 41",
+        "changePassword": True,
         "languageId": GLAMSUITE_DEFAULT_LANGUAGE_CATALA,
         "roleId": GLAMSUITE_DEFAULT_GUEST_ROLE,
         "password": "aezcurraGf123!",
