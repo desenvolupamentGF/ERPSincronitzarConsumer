@@ -1548,8 +1548,8 @@ def main():
 
             reconnect = False
             while not reconnect:
-                logging.info('   Sleeping 60 seconds to reconnect with database&rabbit and retry...')
-                time.sleep(1) 
+                logging.info('   Sleeping 10 seconds to reconnect with database&rabbit and retry...')
+                time.sleep(10) 
             
                 try:
                     dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
