@@ -355,18 +355,20 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                 "correlationId": "46457469E"                
             }
         ],        
-        "correlationId": "46457469E"
-    },
-    :param dataContract: dict -> {
-        "contractNumber": "100/21",
-        "contractTypeId": 1,
-        "startDate": "2024-02-22T12:38:41.440Z",
-        "endDate": "2024-02-22T12:38:41.440Z",
-        "departmentId": "Logística",
-        "workforceId": "Cap de departament",
-        "calendarId": "1598773e-cf84-4cc0-9cc0-08dc339cf820",
-        "annualWorkingHours": 1920,
-        "timetableId": "aa315dbb-11d5-4feb-c106-08dc8bc773d2",
+        "contracts": [
+            {
+                "contractNumber": "100/21",
+                "contractTypeId": 1,
+                "startDate": "2024-02-22T12:38:41.440Z",
+                "endDate": "2024-02-22T12:38:41.440Z",
+                "departmentId": "Logística",
+                "workforceId": "Cap de departament",
+                "calendarId": "1598773e-cf84-4cc0-9cc0-08dc339cf820",
+                "annualWorkingHours": 1920,
+                "timetableId": "aa315dbb-11d5-4feb-c106-08dc8bc773d2",
+                "correlationId": "46457469E"
+            }
+        ],        
         "correlationId": "46457469E"
     }
     :return None
@@ -431,40 +433,53 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
             # Sync worker costs
             costs = data['costs']   
             for cost in costs:
-                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_SALARIES, correlation_id=cost['date'], producerData=cost, data=cost, filter_name="date", filter_value=cost['date'], endPoint=endPoint, origin=origin, helper="")
+                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_SALARIES, correlation_id=cost['date'], producerData=cost, data=cost, filter_name="date", filter_value=cost['date'].replace('Z',''), endPoint=endPoint, origin=origin, helper="")
 
-        # Sync worker contract
-        dataContract = data['dataContract']
-        if dataContract['contractNumber'] != "":
+            # Sync worker contracts
+            contracts = data['contracts']
+            for contract in contracts:
 
-            # We need the GUID for the department
-            get_req = requests.get(URL_API + URL_DEPARTMENTS + f"?search={dataContract['departmentId']}", headers=headers,
-                                   verify=False, timeout=CONN_TIMEOUT)
+                # We check if the contract already exists
+                get_req = requests.get(URL_API + URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, headers=headers,
+                                       verify=False, timeout=CONN_TIMEOUT)
+
+                if get_req.status_code == 200:                
+                    item = next((i for i in get_req.json() if i["contractNumber"].casefold() == contract['contractNumber'].casefold() and i["startDate"].replace('Z','').casefold() == contract['startDate'].replace('Z','').casefold()), None)
+
+                    if item is not None: # If already exists in ERP GF, we keep current department, workforce, calendar and timetable
+                        contract['departmentId'] = item["departmentId"]
+                        contract['workforceId'] = item["workforceId"]
+                        contract['calendarId'] = item["calendarId"]
+                        contract['timetableId'] = item["timetableId"]
+                    else: 
+                        # We need the GUID for the department
+                        get_req = requests.get(URL_API + URL_DEPARTMENTS + f"?search={contract['departmentId']}", headers=headers,
+                                               verify=False, timeout=CONN_TIMEOUT)
     
-            if get_req.status_code == 200:                
-                item = next((i for i in get_req.json() if i["name"].casefold() == dataContract['departmentId'].casefold()), None)
+                        if get_req.status_code == 200:                
+                            item = next((i for i in get_req.json() if i["name"].casefold() == contract['departmentId'].casefold()), None)
 
-                if item is not None:
-                    dataContract['departmentId'] = item["id"]
-                else:
-                    logging.error('Error department not found:' + dataContract['departmentId'])
-                    return            
+                            if item is not None:
+                                contract['departmentId'] = item["id"]
+                            else:
+                                logging.error('Error department not found:' + contract['departmentId'])
+                                return            
 
-            # We need the GUID for the workforce
-            get_req = requests.get(URL_API + URL_WORKFORCES + f"?search={dataContract['workforceId']}", headers=headers,
-                                   verify=False, timeout=CONN_TIMEOUT)
+                        # We need the GUID for the workforce
+                        get_req = requests.get(URL_API + URL_WORKFORCES + f"?search={contract['workforceId']}", headers=headers,
+                                               verify=False, timeout=CONN_TIMEOUT)
     
-            if get_req.status_code == 200:                
-                item = next((i for i in get_req.json() if i["name"].casefold() == dataContract['workforceId'].casefold()), None)
+                        if get_req.status_code == 200:                
+                            item = next((i for i in get_req.json() if i["name"].casefold() == contract['workforceId'].casefold()), None)
 
-                if item is not None:
-                    dataContract['workforceId'] = item["id"]
-                else:
-                    logging.error('Error workforce not found:' + dataContract['workforceId'])
-                    return            
+                            if item is not None:
+                                contract['workforceId'] = item["id"]
+                            else:
+                               logging.error('Error workforce not found:' + contract['workforceId'])
+                               return            
 
-            # Synchronize contract
-            _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=dataContract['contractNumber'], producerData=dataContract, data=dataContract, filter_name="contractNumber", filter_value=dataContract['contractNumber'], endPoint=endPoint, origin=origin, helper="")
+                    # Synchronize contract
+                    _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=contract['startDate'], producerData=contract, data=contract, filter_name="startDate", filter_value=contract['startDate'].replace('Z',''), endPoint=endPoint, origin=origin, helper="")
 
         # Sync EPI location
         dataLocation = data['dataLocation']
