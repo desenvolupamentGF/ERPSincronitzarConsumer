@@ -1,6 +1,5 @@
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
-# TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 ENVIRONMENT = 1
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
@@ -107,6 +106,12 @@ URL_API = os.environ['URL_API_TEST']
 if ENVIRONMENT == 1:
     URL_API = os.environ['URL_API_PROD']
 
+# Global values
+global GLOBAL_ENDPOINT
+global GLOBAL_ORIGIN
+global GLOBAL_CORRELATIONID
+global GLOBAL_CALLTYPE
+
 ####################################################################################################
 
 def mask_letter(mask, letter, replacement):
@@ -195,6 +200,11 @@ def update_value_from_database(dbOrigin, mycursor, correlation_id: str, erpGFId,
 
 def delete_value_from_database(dbOrigin, mycursor, correlation_id: str, url, endPoint, origin):
     mycursor.execute("DELETE FROM ERP_GF.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) +"' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id).replace("'", "''") + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
+    dbOrigin.commit()
+
+# Due to database failures, some structures are not completely syncronized so better to update the hash for another retry
+def reinit_hash(dbOrigin, mycursor, correlation_id: str, url, endPoint, origin):
+    mycursor.execute("UPDATE ERP_GF.ERPIntegration SET hash = '123' WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) +"' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id).replace("'", "''") + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
     dbOrigin.commit()
 
 ####################################################################################################
@@ -530,6 +540,7 @@ def sync_families(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     }
     :return None
     """
+
     synch_by_database(dbOrigin, mycursor, headers, url=URL_FAMILIES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
 def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
@@ -549,6 +560,7 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
     }
     :return: None
     """
+
     p_correlation_id = data['correlationId']
     p_gf_description = data['description']
     p_glam_id, nothing_to_do = synch_by_database(dbOrigin, mycursor, headers, url=URL_LOCATIONS, correlation_id=p_correlation_id,
@@ -767,6 +779,7 @@ def sync_paymentMethods(dbOrigin, mycursor, headers, data: dict, endPoint, origi
     }
     :return None
     """
+
     synch_by_database(dbOrigin, mycursor, headers, url=URL_PAYMENTMETHODS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
 def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
@@ -962,7 +975,7 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     }
     :return None
     """
-    
+
     # Synchronize person
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
@@ -1416,6 +1429,9 @@ def main():
         try:
 
             def callback_message(ch, method, properties, body):
+
+                global GLOBAL_ENDPOINT, GLOBAL_ORIGIN, GLOBAL_CORRELATIONID, GLOBAL_CALLTYPE
+
                 # Calculate access token and header for the request
                 token = calculate_access_token(ENVIRONMENT)
                 headers = calculate_json_header(token)
@@ -1424,31 +1440,67 @@ def main():
 
                 # Mercaderies
                 if data['queueType'] == "MERCADERIES_FAMILIES":
-                    sync_families(dbOrigin, mycursor, headers, data, 'Mercaderies ERP GF', 'Emmegi')
+                    GLOBAL_ENDPOINT = 'Mercaderies ERP GF'
+                    GLOBAL_ORIGIN = 'Emmegi'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_FAMILIES                    
+                    sync_families(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "MERCADERIES_PROJECTES":
+                    GLOBAL_ENDPOINT = 'Mercaderies ERP GF'
+                    GLOBAL_ORIGIN = 'Emmegi'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_LOCATIONS                    
                     maskValue = calculate_mask_value(glo_warehouse_location_mask, glo_zone_code, glo_warehouse_code, glo_plant_code, glo_geolocation_code, glo_aisle_code, glo_rack_code, glo_shelf_code, str(data['correlationId']).strip())
-                    sync_projects(dbOrigin, mycursor, headers, maskValue, data, 'Mercaderies ERP GF', 'Emmegi')
+                    sync_projects(dbOrigin, mycursor, headers, maskValue, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "MERCADERIES_PRODUCTES":
-                    sync_products(dbOrigin, mycursor, headers, data, 'Mercaderies ERP GF', 'Emmegi')
+                    GLOBAL_ENDPOINT = 'Mercaderies ERP GF'
+                    GLOBAL_ORIGIN = 'Emmegi'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_PRODUCTS                    
+                    sync_products(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
                 # Treballadors
                 if data['queueType'] == "TREBALLADORS_TREBALLADORS":
+                    GLOBAL_ENDPOINT = 'Treballadors ERP GF'
+                    GLOBAL_ORIGIN = 'Sesame/Sage'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_WORKERS                    
                     maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
-                    sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, 'Treballadors ERP GF', 'Sesame/Sage')
+                    sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 
                 # Usuaris
                 if data['queueType'] == "USERS_USERS":
-                    sync_usuaris(dbOrigin, mycursor, headers, data, 'Users ERP GF', 'Emmegi')
+                    GLOBAL_ENDPOINT = 'Users ERP GF'
+                    GLOBAL_ORIGIN = 'Emmegi'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_USERS                    
+                    sync_usuaris(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
                 # Organizations
                 if data['queueType'] == "ORGANIZATIONS_PAYMENTMETHODS":
-                    sync_paymentMethods(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
+                    GLOBAL_ENDPOINT = 'Organizations ERP GF'
+                    GLOBAL_ORIGIN = 'Sage'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_PAYMENTMETHODS                    
+                    sync_paymentMethods(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "ORGANIZATIONS_ORGANIZATIONS":
-                    sync_organizations(dbOrigin, mycursor, headers, data, 'Organizations ERP GF', 'Sage')
+                    GLOBAL_ENDPOINT = 'Organizations ERP GF'
+                    GLOBAL_ORIGIN = 'Sage'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_ORGANIZATIONS                    
+                    sync_organizations(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "CLIENTS_CONTACTES":
-                    sync_clientsContactes(dbOrigin, mycursor, headers, data, 'Clients ERP GF', 'Pipedrive')
+                    GLOBAL_ENDPOINT = 'Clients ERP GF'
+                    GLOBAL_ORIGIN = 'Pipedrive'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_PERSONS                    
+                    sync_clientsContactes(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "PROVEIDORS_CONTACTES":
-                    sync_proveidorsContactes(dbOrigin, mycursor, headers, data, 'Proveidors ERP GF', 'Emmegi/GFIntranet')
+                    GLOBAL_ENDPOINT = 'Proveidors ERP GF'
+                    GLOBAL_ORIGIN = 'Emmegi/GFIntranet'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_PERSONS                    
+                    sync_proveidorsContactes(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 # INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024) 
                 # 
                 #                    
@@ -1462,13 +1514,29 @@ def main():
 
                 # Recursos Humans
                 if data['queueType'] == "RRHH_CALENDARISLABORALS":
-                    sync_calendarisLaborals(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
+                    GLOBAL_ENDPOINT = 'Recursos Humans ERP GF'
+                    GLOBAL_ORIGIN = 'Sesame'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_CALENDARS                    
+                    sync_calendarisLaborals(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "RRHH_DEPARTMENTS":
-                    sync_departments(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
+                    GLOBAL_ENDPOINT = 'Recursos Humans ERP GF'
+                    GLOBAL_ORIGIN = 'Sesame'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_DEPARTMENTS                    
+                    sync_departments(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "RRHH_TIMETABLES":
-                    sync_timetables(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
+                    GLOBAL_ENDPOINT = 'Recursos Humans ERP GF'
+                    GLOBAL_ORIGIN = 'Sesame'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_TIMETABLES                    
+                    sync_timetables(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "RRHH_WORKFORCES":
-                    sync_workforces(dbOrigin, mycursor, headers, data, 'Recursos Humans ERP GF', 'Sesame')
+                    GLOBAL_ENDPOINT = 'Recursos Humans ERP GF'
+                    GLOBAL_ORIGIN = 'Sesame'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_WORKFORCES                    
+                    sync_workforces(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
@@ -1481,11 +1549,12 @@ def main():
             reconnect = False
             while not reconnect:
                 logging.info('   Sleeping 60 seconds to reconnect with database&rabbit and retry...')
-                time.sleep(60) 
+                time.sleep(1) 
             
                 try:
                     dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
                     mycursor = dbOrigin.cursor()        
+                    reinit_hash(dbOrigin, mycursor, GLOBAL_CORRELATIONID, GLOBAL_CALLTYPE, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                     myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
                     reconnect = True
                     logging.info('   Successfully reconnected. Execution continues...')
