@@ -313,13 +313,14 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     if get_req.status_code == 200:                
         item = next((i for i in get_req.json() if i["userName"].casefold() == data['userName'].casefold()), None)
 
-        if item is not None: # If already exists in ERP GF, we keep current role and current state
+        if item is not None: # If already exists in ERP GF, we keep current role, current state and current changePassword
             if item["roleId"] != "":
                 data['roleId'] = item["roleId"]
             if str(item["stateId"]) == "2": 
                 data['active'] = "0" # Inactive   
             else: # str(item["stateId"]) == "1"
                 data['active'] = "1" # Active   
+            data['changePassword'] = item["changePassword"]
         else: # If does not exist in ERP GF, we will create it as inactive and role guest (no need to change guest cos producer creates them as guest)
             data['active'] = "0" # Inactive
             
