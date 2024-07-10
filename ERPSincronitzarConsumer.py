@@ -229,14 +229,14 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             logging.error('Error posting to GlamSuite with ' + key + '. Err: ' + str(e))
-            raise Exception('Exception 1 on synch_by_database')
+            return None, False
     elif glam_id is not None and str(old_data_hash) != str(data_hash):
         try:
             req = requests.put(url=URL_API + url + "/" + str(glam_id), data=json.dumps(data), 
                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             logging.error('Error putting to GlamSuite with ' + key + '. Err: ' + str(e))
-            raise Exception('Exception 2 on synch_by_database')
+            return None, False
     else:
         return glam_id, False
 
@@ -271,7 +271,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                     return id, True
                 else:
                     logging.error('Error posting to GlamSuite with ' + key)
-                    raise Exception('Exception 3 on synch_by_database')
+            return None, False
         except Exception as err:
             return None, False
     elif req.status_code == 404:  # Not found. (PUT id not found)
@@ -281,7 +281,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
         logging.error(
             'Error sync:' + key + '\n    json:' + json.dumps(data) +
             '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content))  
-        raise Exception('Exception 4 on synch_by_database')
+        return None, False
 
 ####################################################################################################
 
