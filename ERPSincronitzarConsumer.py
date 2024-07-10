@@ -1050,15 +1050,11 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #    p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 #
 #    if _has_been_posted is not None and _has_been_posted is True:
-#        try:
-#            post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
-#            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
-#                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
-#            if req.status_code != 201:
-#                raise Exception('POST with error when assigning person as contact of the organization')
-#
-#        except Exception as err:
-#            logging.error('Error when assigning person as contact of the organization/provider with error: ' + str(err))          
+#        post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
+#        req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
+#                            headers=headers, verify=False, timeout=CONN_TIMEOUT)
+#        if req.status_code != 201:
+#            raise Exception('POST with error when assigning person as contact of the organization')
 #
 #def sync_proveidorsCampsPersonalitzats_temp(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 #    logging.info('New message: proveïdorCampsPersonalitzats')
@@ -1151,32 +1147,23 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #            return            
 #
 #    # We also need the account of the organization/provider
-#    try:
-#        get_req = requests.get(URL_API + URL_PROVIDERS + '/' + str(organizationId), headers=headers,
-#                               verify=False, timeout=CONN_TIMEOUT)
-#        if get_req.status_code == 404:
-#            logging.error('Error account of the organization/provider not found')          
-#            return
-#        else:
-#            account = get_req.json()['account']
-#    except Exception as err:
-#        logging.error('Error when retreaving account of the organization/provider with error: ' + str(err))          
+#    get_req = requests.get(URL_API + URL_PROVIDERS + '/' + str(organizationId), headers=headers,
+#                           verify=False, timeout=CONN_TIMEOUT)
+#    if get_req.status_code == 404:
+#        logging.error('Error account of the organization/provider not found')          
 #        return
+#    else:
+#        account = get_req.json()['account']
 #
-#    try:
-#        post_data = {"account": str(account), "customerCode": "", "customFieldValues": data} 
-#        req = requests.put(url=URL_API + URL_PROVIDERS + '/' + str(organizationId), data=json.dumps(post_data),     
-#                           headers=headers, verify=False, timeout=CONN_TIMEOUT)
-#        if req.status_code != 200:
-#            raise Exception('PUT with error when assigning personalized fields to the organization')
-#        else:
-#            #data_hash = hash(str(dataAux))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
-#            data_hash = hashlib.sha256(str(dataAux).encode('utf-8')).hexdigest()
-#            update_value_from_database(dbOrigin, mycursor, data['correlationId'], str(req.json()['id']), str(data_hash), URL_PERSONS, endPoint, origin, "")
-#
-#    except Exception as err:
-#        logging.error('Error when assigning personalized fields to the organization with error: ' + str(err))          
-#
+#    post_data = {"account": str(account), "customerCode": "", "customFieldValues": data} 
+#    req = requests.put(url=URL_API + URL_PROVIDERS + '/' + str(organizationId), data=json.dumps(post_data),     
+#                       headers=headers, verify=False, timeout=CONN_TIMEOUT)
+#    if req.status_code != 200:
+#        raise Exception('PUT with error when assigning personalized fields to the organization')
+#    else:
+#        #data_hash = hash(str(dataAux))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+#        data_hash = hashlib.sha256(str(dataAux).encode('utf-8')).hexdigest()
+#        update_value_from_database(dbOrigin, mycursor, data['correlationId'], str(req.json()['id']), str(data_hash), URL_PERSONS, endPoint, origin, "")
 #
 # FINAL CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024) 
 
