@@ -664,7 +664,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                 if req.status_code != 200:
                     raise Exception('PUT with error')
                  
-                update_value_from_database(dbOrigin, mycursor, correlation_id, str(_glam_product_id), str(put_data_hash), URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin)
+                update_value_from_database(dbOrigin, mycursor, correlation_id, str(_glam_product_id), str(put_data_hash), URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin, "")
 
         except Exception as err:
             logging.error('Error sync:' + URL_PRODUCTS + ":" + correlation_id + ' With error: ' + str(err))
@@ -685,7 +685,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                         data=json.dumps(post_product_costs_data), headers=headers,
                         verify=False, timeout=CONN_TIMEOUT)
                     if req_post.status_code == 201:
-                        update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin)
+                        update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
                     else:
                         sync_cost(dbOrigin, mycursor, headers, correlation_id,
                                   post_product_costs_url, post_product_costs_data,
@@ -698,7 +698,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                             data=json.dumps(post_product_costs_data), headers=headers,
                             verify=False, timeout=CONN_TIMEOUT)
                         if req_put.status_code == 200:
-                            update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_put.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin)
+                            update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_put.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
                         else:
                             sync_cost(dbOrigin, mycursor, headers, correlation_id,
                                       post_product_costs_url, post_product_costs_data,
@@ -758,10 +758,10 @@ def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pro
                     data=json.dumps(product_cost_data), headers=headers,
                     verify=False, timeout=CONN_TIMEOUT)
                 if req_put.status_code == 200:
-                     update_value_from_database(dbOrigin, mycursor, correlation_id, str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin)
+                     update_value_from_database(dbOrigin, mycursor, correlation_id, str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
                 else:
                     raise Exception('PUT cost with error')
-            update_value_from_database(dbOrigin, mycursor, correlation_id, str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin)
+            update_value_from_database(dbOrigin, mycursor, correlation_id, str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
         else:
             if cost_glam_id is not None:
                 delete_value_from_database(dbOrigin, mycursor, correlation_id, product_cost_url, endPoint, origin)
