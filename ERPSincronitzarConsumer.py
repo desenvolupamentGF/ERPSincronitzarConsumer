@@ -273,7 +273,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                     logging.error('Error posting to GlamSuite with ' + key)
                     raise Exception('Exception 3 on synch_by_database')
         except Exception as err:
-            raise Exception('Exception 4 on synch_by_database')
+            return None, False
     elif req.status_code == 404:  # Not found. (PUT id not found)
         delete_value_from_database(dbOrigin, mycursor, correlation_id, url, endPoint, origin)
         return None, False
@@ -281,7 +281,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
         logging.error(
             'Error sync:' + key + '\n    json:' + json.dumps(data) +
             '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content))  
-        raise Exception('Exception 5 on synch_by_database')
+        raise Exception('Exception 4 on synch_by_database')
 
 ####################################################################################################
 
