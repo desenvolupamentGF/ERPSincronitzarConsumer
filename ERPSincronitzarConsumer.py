@@ -229,14 +229,14 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             logging.error('Error posting to GlamSuite with ' + key + '. Err: ' + str(e))
-            raise Exception('POST WITH ERROR!!!')
+            raise Exception('POST WITH EXCEPTION ERROR!!!')
     elif glam_id is not None and str(old_data_hash) != str(data_hash):
         try:
             req = requests.put(url=URL_API + url + "/" + str(glam_id), data=json.dumps(data), 
                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             logging.error('Error putting to GlamSuite with ' + key + '. Err: ' + str(e))
-            raise Exception('PUT WITH ERROR!!!')
+            raise Exception('PUT WITH EXCEPTION ERROR!!!')
     else:
         return glam_id, False
 
@@ -272,8 +272,9 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                 else:
                     logging.error('Error posting to GlamSuite with ' + key)
             return None, False
-        except Exception as err:
-            return None, False
+        except Exception as e:
+            logging.error('Error searching in GlamSuite with ' + key + '. Err: ' + str(e))
+            raise Exception('SEARCH WITH EXCEPTION ERROR!!!')
     elif req.status_code == 404:  # Not found. (PUT id not found)
         delete_value_from_database(dbOrigin, mycursor, correlation_id, url, endPoint, origin)
         return None, False
