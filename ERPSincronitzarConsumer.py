@@ -229,14 +229,14 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             logging.error('Error posting to GlamSuite with ' + key + '. Err: ' + str(e))
-            return None, False
+            raise Exception('POST WITH ERROR!!!')
     elif glam_id is not None and str(old_data_hash) != str(data_hash):
         try:
             req = requests.put(url=URL_API + url + "/" + str(glam_id), data=json.dumps(data), 
                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             logging.error('Error putting to GlamSuite with ' + key + '. Err: ' + str(e))
-            return None, False
+            raise Exception('PUT WITH ERROR!!!')
     else:
         return glam_id, False
 
