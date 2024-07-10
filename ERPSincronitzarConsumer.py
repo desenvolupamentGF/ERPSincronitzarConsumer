@@ -329,18 +329,15 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_USERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="userName", filter_value=str(data['userName']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        try:
-            if data['active'] == "1":
-                dataStatus = { "action": "changeState", "stateId": "1"} # Active
-            else:
-                dataStatus = { "action": "changeState", "stateId": "2"} # Inactive
+        if data['active'] == "1":
+            dataStatus = { "action": "changeState", "stateId": "1"} # Active
+        else:
+            dataStatus = { "action": "changeState", "stateId": "2"} # Inactive
 
-            req = requests.patch(url=URL_API + URL_USERS + '/' + str(p_glam_id), data=json.dumps(dataStatus), headers=headers)
-            if (req.status_code != 200 and req.status_code != 400): # (success code - 200 or 400)
-                    raise Exception('PATCH with error when activating/deactivating user')
-        except Exception as err:
-            logging.error('Error synch activating/deactivating with error: ' + str(err))          
-
+        req = requests.patch(url=URL_API + URL_USERS + '/' + str(p_glam_id), data=json.dumps(dataStatus), headers=headers)
+        if (req.status_code != 200 and req.status_code != 400): # (success code - 200 or 400)
+            logging.error('PATCH with error when activating/deactivating user. status_code= ' + str(req.status_code))
+            
 ####################################################################################################
 
 def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
@@ -423,24 +420,17 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         # Workers API Post don't allow linkedin and iban fields
         # Let's synchronize it with the PUT request.
         # We have to GET the element, compare it and modify it if needed.
-        try:
-            req = requests.get(url=URL_API + URL_WORKERS + '/' + str(_glam_worker_id), headers=headers,
-                               verify=False, timeout=CONN_TIMEOUT)
-            _glam_linkedInProfile = req.json()['linkedInProfile']
-            _glam_iban = req.json()['iban']
-        except Exception as err:
-            logging.error('Error sync:' + URL_WORKERS + ":" + str(_glam_worker_id) + " With error: " + str(err))
-            return
+        req = requests.get(url=URL_API + URL_WORKERS + '/' + str(_glam_worker_id), headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+        _glam_linkedInProfile = req.json()['linkedInProfile']
+        _glam_iban = req.json()['iban']
 
         if data['linkedInProfile'] != _glam_linkedInProfile or data['iban'] != _glam_iban:
-            try:
-                req = requests.put(url=URL_API + URL_WORKERS + '/' + str(_glam_worker_id),
-                                   data=json.dumps(data), headers=headers,
-                                   verify=False, timeout=CONN_TIMEOUT)
-                if req.status_code != 200:
-                    raise Exception('PUT with error')
-            except Exception as err:
-                logging.error('Error sync:' + URL_WORKERS + ":" + str(_glam_worker_id) + " With error: " + str(err))
+            req = requests.put(url=URL_API + URL_WORKERS + '/' + str(_glam_worker_id),
+                               data=json.dumps(data), headers=headers,
+                               verify=False, timeout=CONN_TIMEOUT)
+            if req.status_code != 200:
+                logging.error('Error sync:' + URL_WORKERS + ":" + str(_glam_worker_id) + " With error: " + str(req.status_code))
 
         if _has_been_posted is not None and _has_been_posted is True:
             # Sync worker costs
@@ -506,26 +496,18 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         # 11/22: Locations API Post don't allow description field.
         # Let's synchronize it with the PUT request.
         # We have to GET the element, compare it and modify it if needed.
-        try:
-            req = requests.get(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id), headers=headers,
-                               verify=False, timeout=CONN_TIMEOUT)
-            _glam_description = req.json()['description']
-            _containerId = req.json()['containerId']
-
-        except Exception as err:
-            logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
-            return
+        req = requests.get(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id), headers=headers,
+                           verify=False, timeout=CONN_TIMEOUT)
+        _glam_description = req.json()['description']
+        _containerId = req.json()['containerId']
 
         if p_gf_description != _glam_description:
-            try:
-                put_data = {"description": p_gf_description}
-                req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(_containerId),
-                                   data=json.dumps(put_data), headers=headers,
-                                   verify=False, timeout=CONN_TIMEOUT)
-                if req.status_code != 200:
-                    raise Exception('PUT with error')
-            except Exception as err:
-                logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
+            put_data = {"description": p_gf_description}
+            req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(_containerId),
+                               data=json.dumps(put_data), headers=headers,
+                               verify=False, timeout=CONN_TIMEOUT)
+            if req.status_code != 200:
+                logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(req.status_code))
 
 ####################################################################################################
 
@@ -574,26 +556,18 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
     # 11/22: Locations API Post don't allow description field.
     # Let's synchronize it with the PUT request.
     # We have to GET the element, compare it and modify it if needed.
-    try:
-        req = requests.get(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id), headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-        _glam_description = req.json()['description']
-        _containerId = req.json()['containerId']
-    except Exception as err:
-        logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
-        return
+    req = requests.get(url=URL_API + URL_LOCATIONS + '/' + str(p_glam_id), headers=headers,
+                       verify=False, timeout=CONN_TIMEOUT)
+    _glam_description = req.json()['description']
+    _containerId = req.json()['containerId']
 
     if p_gf_description != _glam_description:
-        try:
-            put_data = {"description": p_gf_description}
-            req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(_containerId),
-                               data=json.dumps(put_data), headers=headers,
+        put_data = {"description": p_gf_description}
+        req = requests.put(url=URL_API + URL_CONTAINERS + '/' + str(_containerId),
+                           data=json.dumps(put_data), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
-            if req.status_code != 200:
-                raise Exception('PUT with error')
-        except Exception as err:
-            logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(err))
-    return
+        if req.status_code != 200:
+            logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(req.status_code))
 
 def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: product')
@@ -645,94 +619,79 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     # Update
     if _glam_product_id is not None:
         # PUT product fields.
-        try:
-            glam_id, old_put_data_hash = get_value_from_database(mycursor, correlation_id, URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin)
+        glam_id, old_put_data_hash = get_value_from_database(mycursor, correlation_id, URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin)
 
-            put_data = {
-                "code": data['code'],
-                "name": data['name'],
-                "description": data['description'],
-                "familyId": data['familyId'],
-                "eanCode": ""
-            }
-            #put_data_hash = hash(str(put_data))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
-            put_data_hash = hashlib.sha256(str(put_data).encode('utf-8')).hexdigest()
+        put_data = {
+            "code": data['code'],
+            "name": data['name'],
+            "description": data['description'],
+            "familyId": data['familyId'],
+            "eanCode": ""
+        }
+        #put_data_hash = hash(str(put_data))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+        put_data_hash = hashlib.sha256(str(put_data).encode('utf-8')).hexdigest()
 
-            if old_put_data_hash is None or str(old_put_data_hash) != str(put_data_hash):
-                req = requests.put(url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id),
-                                   data=json.dumps(put_data), headers=headers,
-                                   verify=False, timeout=CONN_TIMEOUT)
-                if req.status_code != 200:
-                    raise Exception('PUT with error')
+        if old_put_data_hash is None or str(old_put_data_hash) != str(put_data_hash):
+            req = requests.put(url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id),
+                               data=json.dumps(put_data), headers=headers,
+                               verify=False, timeout=CONN_TIMEOUT)
+            if req.status_code != 200:
+                raise Exception('PUT with error')
                  
-                update_value_from_database(dbOrigin, mycursor, correlation_id, str(_glam_product_id), str(put_data_hash), URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin, "")
-
-        except Exception as err:
-            logging.error('Error sync:' + URL_PRODUCTS + ":" + correlation_id + ' With error: ' + str(err))
+            update_value_from_database(dbOrigin, mycursor, correlation_id, str(_glam_product_id), str(put_data_hash), URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin, "")
 
         # Sync product costs.
-        try:
-            for product_cost in data['costs']:
-                post_product_costs_url = URL_PRODUCTS + '/' + str(_glam_product_id) + URL_COSTS + "/" + str(product_cost['date'])
-                cost_glam_id, old_post_data_costs_hash = get_value_from_database(mycursor, correlation_id, post_product_costs_url, endPoint, origin)
+        for product_cost in data['costs']:
+            post_product_costs_url = URL_PRODUCTS + '/' + str(_glam_product_id) + URL_COSTS + "/" + str(product_cost['date'])
+            cost_glam_id, old_post_data_costs_hash = get_value_from_database(mycursor, correlation_id, post_product_costs_url, endPoint, origin)
 
-                post_product_costs_data = {"productId": _glam_product_id, "date": product_cost['date'], "cost": product_cost['cost']}
-                #post_product_cost_data_hash = hash(str(post_product_costs_data))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor
-                post_product_cost_data_hash = hashlib.sha256(str(post_product_costs_data).encode('utf-8')).hexdigest()
+            post_product_costs_data = {"productId": _glam_product_id, "date": product_cost['date'], "cost": product_cost['cost']}
+            #post_product_cost_data_hash = hash(str(post_product_costs_data))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor
+            post_product_cost_data_hash = hashlib.sha256(str(post_product_costs_data).encode('utf-8')).hexdigest()
 
-                if cost_glam_id is None:
-                    req_post = requests.post(
-                        url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id) + URL_COSTS,
+            if cost_glam_id is None:
+                req_post = requests.post(
+                    url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id) + URL_COSTS,
+                    data=json.dumps(post_product_costs_data), headers=headers,
+                    verify=False, timeout=CONN_TIMEOUT)
+                if req_post.status_code == 201:
+                    update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
+                else:
+                    sync_cost(dbOrigin, mycursor, headers, correlation_id,
+                              post_product_costs_url, post_product_costs_data,
+                              post_product_cost_data_hash, _glam_product_id, product_cost, cost_glam_id, 
+                              endPoint, origin)
+            else:
+                if old_post_data_costs_hash is None or str(old_post_data_costs_hash) != str(post_product_cost_data_hash):
+                    req_put = requests.put(
+                        url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id) + URL_COSTS + "/" + str(cost_glam_id),
                         data=json.dumps(post_product_costs_data), headers=headers,
                         verify=False, timeout=CONN_TIMEOUT)
-                    if req_post.status_code == 201:
-                        update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
+                    if req_put.status_code == 200:
+                        update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_put.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
                     else:
                         sync_cost(dbOrigin, mycursor, headers, correlation_id,
                                   post_product_costs_url, post_product_costs_data,
                                   post_product_cost_data_hash, _glam_product_id, product_cost, cost_glam_id, 
                                   endPoint, origin)
-                else:
-                    if old_post_data_costs_hash is None or str(old_post_data_costs_hash) != str(post_product_cost_data_hash):
-                        req_put = requests.put(
-                            url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id) + URL_COSTS + "/" + str(cost_glam_id),
-                            data=json.dumps(post_product_costs_data), headers=headers,
-                            verify=False, timeout=CONN_TIMEOUT)
-                        if req_put.status_code == 200:
-                            update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_put.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
-                        else:
-                            sync_cost(dbOrigin, mycursor, headers, correlation_id,
-                                      post_product_costs_url, post_product_costs_data,
-                                      post_product_cost_data_hash, _glam_product_id, product_cost, cost_glam_id, 
-                                      endPoint, origin)
-
-        except Exception as err:
-            logging.error('Error sync:' + URL_PRODUCTS + ":" + correlation_id + ' With error: ' + str(err))
 
         # Synchronize product formats.
-        try:
-            sync_format_data = {
-                "correlationId": format_correlation_id,
-                "formatCode": format_correlation_id,
-                "quantity": 1
-            }
-            synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTS + '/' + str(_glam_product_id) + URL_FORMATS, correlation_id=format_correlation_id,
-                              producerData=sync_format_data, data=sync_format_data, filter_name="formatCode", filter_value=format_correlation_id, endPoint=endPoint, origin=origin, helper="")
-
-        except Exception as err:
-            logging.error('Error synch: ' + URL_PRODUCTS + '/' + str(_glam_product_id) + URL_FORMATS + ":" + correlation_id + ' With error: ' + str(err))
+        sync_format_data = {
+            "correlationId": format_correlation_id,
+            "formatCode": format_correlation_id,
+            "quantity": 1
+        }
+        synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTS + '/' + str(_glam_product_id) + URL_FORMATS, correlation_id=format_correlation_id,
+                          producerData=sync_format_data, data=sync_format_data, filter_name="formatCode", filter_value=format_correlation_id, endPoint=endPoint, origin=origin, helper="")
 
     # Activate synchronized product.
     if _has_been_posted is not None and _has_been_posted is True:
-        try:
-            patch_data = {"action": "ChangeState", "stateId": 2}  # 2 = State active.
-            req = requests.patch(url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id),
-                                    data=json.dumps(patch_data), headers=headers,
-                                    verify=False, timeout=CONN_TIMEOUT)
-            if req.status_code != 200:
-                raise Exception('PATCH with error when activating product')
-        except Exception as err:
-            logging.error('Error synch: ' + URL_PRODUCTS + ':' + correlation_id + " With error: " + str(err))
+        patch_data = {"action": "ChangeState", "stateId": 2}  # 2 = State active.
+        req = requests.patch(url=URL_API + URL_PRODUCTS + '/' + str(_glam_product_id),
+                                data=json.dumps(patch_data), headers=headers,
+                                verify=False, timeout=CONN_TIMEOUT)
+        if req.status_code != 200:
+            raise Exception('PATCH with error when activating product')
 
 def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, product_cost_data, product_cost_data_hash, product_glam_id, product_cost, cost_glam_id, endPoint, origin):
     # Obtain element to update
@@ -880,87 +839,83 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
     helper = replaceCharacters(data["legalName"], [".",",","-","'"," "], True)
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper=helper)
     if _has_been_posted is not None and _has_been_posted is True:
-        try:
-            if data['active'] == "YES":
-                patch_data = {"action": "ChangeState", "stateId": 2}  # 2 = State active.
+        if data['active'] == "YES":
+            patch_data = {"action": "ChangeState", "stateId": 2}  # 2 = State active.
+        else:
+            patch_data = {"action": "ChangeState", "stateId": 3}  # 3 = Not active.
+        req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id),
+                             data=json.dumps(patch_data), headers=headers,
+                             verify=False, timeout=CONN_TIMEOUT)
+        if req.status_code != 200:
+            logging.error('PATCH with error when activating/deactivating organization with error: ' + str(req.status_code))
+
+        if data['accountP'] != "":
+            # The organization is a provider too
+            post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
+            p_glam_provider_id, _provider_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+            # We create an address for the organization/provider
+            p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="address", filter_value=str(dataProveedor['address']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+            if _address_has_been_posted is not None and _address_has_been_posted is True:
+                # Time to stablish the commercial conditions of the organization/provider
+                if dataProveedor['paymentMethodId'] != "":
+                    dataProveedor['organizationAddressId'] = str(p_glam_address_id)
+                    synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="organizationAddressId", filter_value=str(dataProveedor['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+        if data['accountC'] != "":
+            # The organization is a client too
+            post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
+            p_glam_customer_id, _customer_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+            # We create an address for the organization/client
+            p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="address", filter_value=str(dataCliente['address']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+            if _address_has_been_posted is not None and _address_has_been_posted is True:
+                # Time to stablish the commercial conditions of the organization/client
+                if dataCliente['paymentMethodId'] != "":
+                    dataCliente['organizationAddressId'] = str(p_glam_address_id)
+                    synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+            creditRisk = round(float(dataCliente['amount']), 2)
+            if creditRisk == round(float(0), 2): # if 0 means that we don't really have a real value for the risk so we don't sync any value
+                None
             else:
-                patch_data = {"action": "ChangeState", "stateId": 3}  # 3 = Not active.
-            req = requests.patch(url=URL_API + URL_ORGANIZATIONS + '/' + str(p_glam_id),
-                                 data=json.dumps(patch_data), headers=headers,
-                                 verify=False, timeout=CONN_TIMEOUT)
-            if req.status_code != 200:
-                logging.error('PATCH with error when activating/deactivating organization with error: ' + str(req.status_code))
+                if creditRisk == round(float(-1), 2): # if -1 means that the insurance company said the risk is 0
+                    creditRisk = round(float(0), 2)
 
-            if data['accountP'] != "":
-                # The organization is a provider too
-                post_provider = {"organizationId": str(p_glam_id), "account": data['accountP'], "correlationId": data['correlationId'], }
-                p_glam_provider_id, _provider_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PROVIDERS, correlation_id=data['correlationId'], producerData=post_provider, data=post_provider, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
+                # Obtain most recent credit risk of the organization/client
+                req_get = requests.get(
+                    url=URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS + "?o=date,desc", # descending order by data
+                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
+              
+                amount = 0
+                insuranceCompany = ""
+                date = ""
+                if req_get.status_code == 200:
+                    # Need the details of the most recent date
+                    for i in req_get.json():
+                        amount = i['amount']
+                        insuranceCompany = i['insuranceCompany']
+                        date = datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date()
+                        break # first retrieved credit risk is the one I need cos the descending order by date
 
-                # We create an address for the organization/provider
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="address", filter_value=str(dataProveedor['address']).strip(), endPoint=endPoint, origin=origin, helper="")
-
-                if _address_has_been_posted is not None and _address_has_been_posted is True:
-                    # Time to stablish the commercial conditions of the organization/provider
-                    if dataProveedor['paymentMethodId'] != "":
-                        dataProveedor['organizationAddressId'] = str(p_glam_address_id)
-                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataProveedor['correlationId'], producerData=dataProveedorAux, data=dataProveedor, filter_name="organizationAddressId", filter_value=str(dataProveedor['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
-
-            if data['accountC'] != "":
-                # The organization is a client too
-                post_customer = {"organizationId": str(p_glam_id), "account": data['accountC'], "correlationId": data['correlationId'], }
-                p_glam_customer_id, _customer_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CUSTOMERS, correlation_id=data['correlationId'], producerData=post_customer, data=post_customer, filter_name="tradeName", filter_value=str(data['tradeName']).strip(), endPoint=endPoint, origin=origin, helper="")
-
-                # We create an address for the organization/client
-                p_glam_address_id, _address_has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_ADDRESS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="address", filter_value=str(dataCliente['address']).strip(), endPoint=endPoint, origin=origin, helper="")
-
-                if _address_has_been_posted is not None and _address_has_been_posted is True:
-                    # Time to stablish the commercial conditions of the organization/client
-                    if dataCliente['paymentMethodId'] != "":
-                        dataCliente['organizationAddressId'] = str(p_glam_address_id)
-                        synch_by_database(dbOrigin, mycursor, headers, url=URL_ORGANIZATIONS + '/' + str(p_glam_id) + URL_COMMERCIALCONDITIONS, correlation_id=dataCliente['correlationId'], producerData=dataClienteAux, data=dataCliente, filter_name="organizationAddressId", filter_value=str(dataCliente['organizationAddressId']).strip(), endPoint=endPoint, origin=origin, helper="")
-
-                creditRisk = round(float(dataCliente['amount']), 2)
-                if creditRisk == round(float(0), 2): # if 0 means that we don't really have a real value for the risk so we don't sync any value
-                    None
-                else:
-                    if creditRisk == round(float(-1), 2): # if -1 means that the insurance company said the risk is 0
-                        creditRisk = round(float(0), 2)
-
-                    # Obtain most recent credit risk of the organization/client
-                    req_get = requests.get(
-                        url=URL_API + URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS + "?o=date,desc", # descending order by data
-                        headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                
-                    amount = 0
-                    insuranceCompany = ""
-                    date = ""
-                    if req_get.status_code == 200:
-                        # Need the details of the most recent date
-                        for i in req_get.json():
-                            amount = i['amount']
-                            insuranceCompany = i['insuranceCompany']
-                            date = datetime.datetime.strptime(i['date'], "%Y-%m-%dT%H:%M:%S").date()
-                            break # first retrieved credit risk is the one I need cos the descending order by date
-
-                        newRisk = False
-                        if date == "":
+                    newRisk = False
+                    if date == "":
+                        newRisk = True
+                    else:
+                        if round(float(amount), 2) != creditRisk or insuranceCompany != dataCliente['insuranceCompany']:
                             newRisk = True
-                        else:
-                            if round(float(amount), 2) != creditRisk or insuranceCompany != dataCliente['insuranceCompany']:
-                                newRisk = True
 
-                        if newRisk:
-                            dataRisk = {"date": str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")), "amount": str(creditRisk), "insuranceCompany": dataCliente['insuranceCompany'], }
-                            url = URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS
-                            #data_hash = hash(str(dataRisk))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
-                            data_hash = hashlib.sha256(str(dataRisk).encode('utf-8')).hexdigest()
-                            req = requests.post(url=URL_API + url, data=json.dumps(dataRisk),     
-                                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
-                            if req.status_code == 201:                            
-                                update_value_from_database(dbOrigin, mycursor, req.json()['id'], p_glam_customer_id, str(data_hash), url, endPoint, origin, "")
-
-        except Exception as err:
-            logging.error('Error synch activating organization with error: ' + str(err))          
+                    if newRisk:
+                        dataRisk = {"date": str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")), "amount": str(creditRisk), "insuranceCompany": dataCliente['insuranceCompany'], }
+                        url = URL_CUSTOMERS + '/' + str(p_glam_customer_id) + URL_CREDITRISKS
+                        #data_hash = hash(str(dataRisk))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
+                        data_hash = hashlib.sha256(str(dataRisk).encode('utf-8')).hexdigest()
+                        req = requests.post(url=URL_API + url, data=json.dumps(dataRisk),     
+                                            headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                        if req.status_code == 201:                            
+                            update_value_from_database(dbOrigin, mycursor, req.json()['id'], p_glam_customer_id, str(data_hash), url, endPoint, origin, "")
 
 def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: clientContacte')
@@ -983,15 +938,11 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        try:
-            post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
-            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(data['organizationId']) + URL_CONTACTS, data=json.dumps(post_data),     
-                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
-            if req.status_code != 201:
-                raise Exception('POST with error when assigning person as contact of the organization')
-
-        except Exception as err:
-            logging.error('Error when assigning person as contact of the organization/client with error: ' + str(err))          
+        post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
+        req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(data['organizationId']) + URL_CONTACTS, data=json.dumps(post_data),     
+                            headers=headers, verify=False, timeout=CONN_TIMEOUT)
+        if req.status_code != 201:
+            raise Exception('POST with error when assigning person as contact of the organization')
 
 def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: proveïdorContacte')
@@ -1043,15 +994,11 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PERSONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        try:
-            post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
-            req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
-                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
-            if req.status_code != 201:
-                raise Exception('POST with error when assigning person as contact of the organization')
-
-        except Exception as err:
-            logging.error('Error when assigning person as contact of the organization/provider with error: ' + str(err))          
+        post_data = {"personId": str(p_glam_id), "position": data['position'], "comments": data['comments']} 
+        req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
+                            headers=headers, verify=False, timeout=CONN_TIMEOUT)
+        if req.status_code != 201:
+            raise Exception('POST with error when assigning person as contact of the organization')
 
 # INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024)  
 #
@@ -1261,12 +1208,8 @@ def sync_calendarisLaborals(dbOrigin, mycursor, headers, data: dict, endPoint, o
     p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        try:
-            for holiday in data["holidays"]:
-                synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS + '/' + str(p_glam_id) + URL_HOLIDAYS, correlation_id=holiday['correlationId'], producerData=holiday, data=holiday, filter_name="date", filter_value=str(holiday['date']).strip(), endPoint=endPoint, origin=origin, helper="")                
-
-        except Exception as err:
-            logging.error('Error when assigning holidays to the calendar with error: ' + str(err))          
+        for holiday in data["holidays"]:
+            synch_by_database(dbOrigin, mycursor, headers, url=URL_CALENDARS + '/' + str(p_glam_id) + URL_HOLIDAYS, correlation_id=holiday['correlationId'], producerData=holiday, data=holiday, filter_name="date", filter_value=str(holiday['date']).strip(), endPoint=endPoint, origin=origin, helper="")                
 
 def sync_departments(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: departments')
