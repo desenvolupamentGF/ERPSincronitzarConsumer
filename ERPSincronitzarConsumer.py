@@ -245,7 +245,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             p_glam_id = req.json()['userName']
         else:
             p_glam_id = req.json()['id']
-        update_value_from_database(dbOrigin, mycursor, correlation_id, p_glam_id, str(data_hash), url, endPoint, origin, helper)
+        update_value_from_database(dbOrigin, mycursor, str(correlation_id), p_glam_id, str(data_hash), url, endPoint, origin, helper)
         return p_glam_id, True
     elif req.status_code == 204:
         delete_value_from_database(dbOrigin, mycursor, correlation_id, url, endPoint, origin)
@@ -267,7 +267,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                         id = str(item['userName'])
                     else:
                         id = str(item['id'])
-                    update_value_from_database(dbOrigin, mycursor, correlation_id, id, str(data_hash), url, endPoint, origin, helper)
+                    update_value_from_database(dbOrigin, mycursor, str(correlation_id), id, str(data_hash), url, endPoint, origin, helper)
                     return id, True
                 else:
                     logging.error('Error posting to GlamSuite with ' + key)
@@ -636,9 +636,9 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                                data=json.dumps(put_data), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
-                raise Exception('PUT with error')
-                 
-            update_value_from_database(dbOrigin, mycursor, correlation_id, str(_glam_product_id), str(put_data_hash), URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin, "")
+                logging.error('Error put products ' + str(correlation_id) + '. PUT with error.')
+            else:     
+                update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(_glam_product_id), str(put_data_hash), URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin, "")
 
         # Sync product costs.
         for product_cost in data['costs']:
@@ -655,7 +655,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                     data=json.dumps(post_product_costs_data), headers=headers,
                     verify=False, timeout=CONN_TIMEOUT)
                 if req_post.status_code == 201:
-                    update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
+                    update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(req_post.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
                 else:
                     sync_cost(dbOrigin, mycursor, headers, correlation_id,
                               post_product_costs_url, post_product_costs_data,
@@ -668,7 +668,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                         data=json.dumps(post_product_costs_data), headers=headers,
                         verify=False, timeout=CONN_TIMEOUT)
                     if req_put.status_code == 200:
-                        update_value_from_database(dbOrigin, mycursor, correlation_id, str(req_put.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
+                        update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(req_put.json()['id']), str(post_product_cost_data_hash), post_product_costs_url, endPoint, origin, "")
                     else:
                         sync_cost(dbOrigin, mycursor, headers, correlation_id,
                                   post_product_costs_url, post_product_costs_data,
@@ -691,7 +691,7 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                                 data=json.dumps(patch_data), headers=headers,
                                 verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 200:
-            raise Exception('PATCH with error when activating product')
+            logging.error('Error patch products ' + str(correlation_id) + '. PATCH with error.')
 
 def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, product_cost_data, product_cost_data_hash, product_glam_id, product_cost, cost_glam_id, endPoint, origin):
     # Obtain element to update
@@ -718,10 +718,10 @@ def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pro
                     data=json.dumps(product_cost_data), headers=headers,
                     verify=False, timeout=CONN_TIMEOUT)
                 if req_put.status_code == 200:
-                     update_value_from_database(dbOrigin, mycursor, correlation_id, str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
+                     update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
                 else:
-                    raise Exception('PUT cost with error')
-            update_value_from_database(dbOrigin, mycursor, correlation_id, str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
+                    logging.error('Error put cost ' + str(correlation_id) + '. PUT with error.')                    
+            update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
         else:
             if cost_glam_id is not None:
                 delete_value_from_database(dbOrigin, mycursor, correlation_id, product_cost_url, endPoint, origin)
@@ -942,7 +942,7 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(data['organizationId']) + URL_CONTACTS, data=json.dumps(post_data),     
                             headers=headers, verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 201:
-            raise Exception('POST with error when assigning person as contact of the organization')
+            logging.error('Error post when assigning person as contact of the organization/client')
 
 def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: proveïdorContacte')
@@ -998,7 +998,7 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
         req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
                             headers=headers, verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 201:
-            raise Exception('POST with error when assigning person as contact of the organization')
+            logging.error('Error post when assigning person as contact of the organization/proveidor')
 
 # INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024)  
 #
@@ -1054,7 +1054,8 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #        req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
 #                            headers=headers, verify=False, timeout=CONN_TIMEOUT)
 #        if req.status_code != 201:
-#            raise Exception('POST with error when assigning person as contact of the organization')
+#            logging.error('POST with error when assigning person as contact of the organization')
+#            return
 #
 #def sync_proveidorsCampsPersonalitzats_temp(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 #    logging.info('New message: proveïdorCampsPersonalitzats')
@@ -1091,7 +1092,8 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #                req = requests.post(url=URL_API + URL_CUSTOMFIELDS + '/' + "e26740a3-fbf5-43b7-547e-08dc985fcbef" + "/values", data=json.dumps(post_data),     
 #                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
 #                if req.status_code != 201:
-#                    raise Exception('POST with error when creating "Família": ' + str(data['Família']))
+#                    logging.error('POST with error when creating "Família": ' + str(data['Família']))
+#                    return
 #                else:
 #                    data['Família'] = str(req.json()['id'])
 #
@@ -1110,7 +1112,8 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #                req = requests.post(url=URL_API + URL_CUSTOMFIELDS + '/' + "697b054c-aa25-462a-547f-08dc985fcbef" + "/values", data=json.dumps(post_data),     
 #                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
 #                if req.status_code != 201:
-#                    raise Exception('POST with error when creating "Producte": ' + str(data['Producte']))
+#                    logging.error('POST with error when creating "Producte": ' + str(data['Producte']))
+#                    return
 #                else:
 #                    data['Producte'] = str(req.json()['id'])
 #
@@ -1129,7 +1132,8 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #                req = requests.post(url=URL_API + URL_CUSTOMFIELDS + '/' + "9dbac501-4faf-453d-5480-08dc985fcbef" + "/values", data=json.dumps(post_data),     
 #                                    headers=headers, verify=False, timeout=CONN_TIMEOUT)
 #                if req.status_code != 201:
-#                    raise Exception('POST with error when creating "Fàbrica": ' + str(data['Fàbrica']))
+#                    logging.error('POST with error when creating "Fàbrica": ' + str(data['Fàbrica']))
+#                    return
 #                else:
 #                    data['Fàbrica'] = str(req.json()['id'])
 #
