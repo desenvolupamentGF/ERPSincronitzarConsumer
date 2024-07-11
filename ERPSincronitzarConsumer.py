@@ -1163,7 +1163,8 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
 #    req = requests.put(url=URL_API + URL_PROVIDERS + '/' + str(organizationId), data=json.dumps(post_data),     
 #                       headers=headers, verify=False, timeout=CONN_TIMEOUT)
 #    if req.status_code != 200:
-#        raise Exception('PUT with error when assigning personalized fields to the organization')
+#        logging.error(''PUT with error when assigning personalized fields to the organization')          
+#        return
 #    else:
 #        #data_hash = hash(str(dataAux))    # Perquè el hash era diferent a cada execució encara que s'apliqués al mateix valor 
 #        data_hash = hashlib.sha256(str(dataAux).encode('utf-8')).hexdigest()
