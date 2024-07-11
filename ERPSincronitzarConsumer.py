@@ -1476,7 +1476,7 @@ def main():
             myRabbit.channel.start_consuming()
         
         except Exception as e:
-            logging.error('   Unexpected error processing queued messages: ' + str(e))
+            logging.error('   Unexpected error processing queued messages: ' + str(e) + ". GLOBAL_CORRELATIONID=" + str(GLOBAL_CORRELATIONID) + " GLOBAL_CALLTYPE=" + str(GLOBAL_CALLTYPE) + " GLOBAL_ENDPOINT=" + str(GLOBAL_ENDPOINT) + " GLOBAL_ORIGIN=" + str(GLOBAL_ORIGIN))
             send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
 
             reconnect = False
