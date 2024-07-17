@@ -204,7 +204,7 @@ def delete_value_from_database(dbOrigin, mycursor, correlation_id: str, url, end
 
 # Due to database failures, some structures are not completely syncronized so better to update the hash for another retry
 def reinit_hash(dbOrigin, mycursor, correlation_id: str, url, endPoint, origin):
-    mycursor.execute("UPDATE ERP_GF.ERPIntegration SET hash = '123' WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) +"' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id).replace("'", "''") + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
+    mycursor.execute("UPDATE ERP_GF.ERPIntegration SET hash = '999' WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) +"' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id).replace("'", "''") + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
     dbOrigin.commit()
 
 ####################################################################################################
