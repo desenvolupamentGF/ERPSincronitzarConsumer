@@ -376,6 +376,17 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                 "calendarId": "1598773e-cf84-4cc0-9cc0-08dc339cf820",
                 "annualWorkingHours": 1920,
                 "timetableId": "aa315dbb-11d5-4feb-c106-08dc8bc773d2",
+                "shifts": [
+                  {
+                    "monday": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "tuesday": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "wednesday": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "thursday": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "friday": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "saturday": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "sunday": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  }
+                ],
                 "costTypeId": 1,
                 "correlationId": "46457469E"
             }
