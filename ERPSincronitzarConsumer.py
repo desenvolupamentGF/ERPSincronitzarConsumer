@@ -465,7 +465,6 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                         contract['departmentId'] = item["departmentId"]
                         contract['workforceId'] = item["workforceId"]
                         contract['calendarId'] = item["calendarId"]
-                        contract['timetableId'] = item["timetableId"]
                     else: 
                         # We need the GUID for the department
                         get_req = requests.get(URL_API + URL_DEPARTMENTS + f"?search={contract['departmentId']}", headers=headers,
