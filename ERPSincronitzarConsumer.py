@@ -477,7 +477,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                                 contract['departmentId'] = item["id"]
                             else:
                                 logging.error('Error department not found:' + contract['departmentId'])
-                                return            
+                                continue # NEXT ONE           
 
                         # We need the GUID for the workforce
                         get_req = requests.get(URL_API + URL_WORKFORCES + f"?search={contract['workforceId']}", headers=headers,
@@ -490,7 +490,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                                 contract['workforceId'] = item["id"]
                             else:
                                logging.error('Error workforce not found:' + contract['workforceId'])
-                               return            
+                               continue # NEXT ONE           
 
                     # Synchronize contract
                     _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=contract['startDate'], producerData=contract, data=contract, filter_name="startDate", filter_value=contract['startDate'].replace('Z',''), endPoint=endPoint, origin=origin, helper="")
