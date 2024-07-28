@@ -38,6 +38,7 @@ URL_COSTS = '/standardCosts'
 URL_WORKERS = '/workers'
 URL_CONTRACTS = '/contracts'
 URL_SALARIES = '/salaries'
+URL_SCHEDULEADJUSTMENTS = '/scheduleAdjustments'
 URL_USERS = '/users'
 URL_ORGANIZATIONS = '/organizations'
 URL_PROVIDERS = '/providers'
@@ -391,11 +392,19 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                 "correlationId": "46457469E"
             }
         ],        
+        "absences": [
+            {
+                "date": "2024-01-01T00:00:00",
+                "nonWorkingReasonId": "6",
+                "timetableId": None,
+                "shiftId": None,
+                "correlationId": "46457469E"                
+            }
+        ],        
         "correlationId": "46457469E"
     }
     :return None
     """
-
     dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
 
     # We need the GUID for the nationality
@@ -494,6 +503,11 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
 
                     # Synchronize contract
                     _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=contract['startDate'], producerData=contract, data=contract, filter_name="startDate", filter_value=contract['startDate'].replace('Z',''), endPoint=endPoint, origin=origin, helper="")
+
+            # Sync worker absences
+            absences = data['absences']   
+            for absence in absences:
+                _glam_absence_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_SCHEDULEADJUSTMENTS, correlation_id=absence['date'], producerData=absence, data=absence, filter_name="date", filter_value=absence['date'], endPoint=endPoint, origin=origin, helper="")
 
         # Sync EPI location
         dataLocation = data['dataLocation']
@@ -1413,10 +1427,10 @@ def main():
                     GLOBAL_ENDPOINT = 'Treballadors ERP GF'
                     GLOBAL_ORIGIN = 'Sesame/Sage'
                     GLOBAL_CORRELATIONID = data['correlationId']
-                    GLOBAL_CALLTYPE = URL_WORKERS                    
+                    GLOBAL_CALLTYPE = URL_WORKERS
                     maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
                     sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
-                
+
                 # Usuaris
                 if data['queueType'] == "USERS_USERS":
                     GLOBAL_ENDPOINT = 'Users ERP GF'
