@@ -504,7 +504,19 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                     # Synchronize contract
                     _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=contract['startDate'], producerData=contract, data=contract, filter_name="startDate", filter_value=contract['startDate'].replace('Z',''), endPoint=endPoint, origin=origin, helper="")
 
-            # Sync worker absences
+            # Sync worker absences: Two steps, first delete, then create. For precaution reasons cos employee maybe changed his mind about his holidays.
+
+            # a) First we delete all possible absences (in case some have been deleted from Sesame)
+            strFrom = datetime.date.today() - datetime.timedelta(90) # Darrers tres mesos
+            mycursor.execute("SELECT correlationId, erpGFId FROM ERP_GF.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) + "' AND origin = '" + str(origin) + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + URL_WORKERS + '/' + str(_glam_worker_id) + URL_SCHEDULEADJUSTMENTS + "' AND correlationId >= '" + str(strFrom) + "T00:00:00" + "'")
+            myresult = mycursor.fetchall()
+            for x in myresult:
+                req = requests.delete(url=URL_API + URL_WORKERS + "/" + str(_glam_worker_id) + URL_SCHEDULEADJUSTMENTS + '/' + str(str(x[1])), 
+                                      headers=headers, verify=False, timeout=CONN_TIMEOUT)
+                if req.status_code == 204:
+                    delete_value_from_database(dbOrigin, mycursor, str(x[0]), URL_WORKERS + '/' + str(_glam_worker_id) + URL_SCHEDULEADJUSTMENTS, endPoint, origin)
+
+            # b) Second we create them (again)
             absences = data['absences']   
             for absence in absences:
                 _glam_absence_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_SCHEDULEADJUSTMENTS, correlation_id=absence['date'], producerData=absence, data=absence, filter_name="date", filter_value=absence['date'], endPoint=endPoint, origin=origin, helper="")
