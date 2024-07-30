@@ -504,7 +504,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                     # Synchronize contract
                     _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=contract['startDate'], producerData=contract, data=contract, filter_name="startDate", filter_value=contract['startDate'].replace('Z',''), endPoint=endPoint, origin=origin, helper="")
 
-            # Sync worker absences: Two steps, first delete, then create. For precaution reasons cos employee maybe changed his mind about his holidays.
+            # Sync worker absences: Two steps, first delete, then create. For precaution reasons cos employees maybe changed their mind about their holidays.
 
             # a) First we delete all possible absences (in case some have been deleted from Sesame)
             strFrom = datetime.date.today() - datetime.timedelta(90) # Darrers tres mesos
