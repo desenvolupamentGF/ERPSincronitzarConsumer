@@ -1440,7 +1440,7 @@ def main():
                     GLOBAL_ORIGIN = 'Sesame/Sage'
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_WORKERS
-                    maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['correlationId']).strip())
+                    maskValue = calculate_mask_value(glo_warehouse_location_mask_epi, glo_zone_code_epi, glo_warehouse_code_epi, glo_plant_code_epi, glo_geolocation_code_epi, glo_aisle_code_epi, glo_rack_code_epi, glo_shelf_code_epi, str(data['dataLocation']['position']).strip())
                     sync_treballadors(dbOrigin, mycursor, headers, maskValue, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
                 # Usuaris
