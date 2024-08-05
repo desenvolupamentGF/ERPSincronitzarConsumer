@@ -1,7 +1,7 @@
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
-ENVIRONMENT = 1
+ENVIRONMENT = 0
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
@@ -358,8 +358,8 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         "simulationId": "",
         "name": "Fabricació alumini",
         "description": "VIAS Y CONSTRUCCIONES, S.A._2785 CARPINTERIA FA3P  PLANTA ALTELL - FACHADA NOR",
-        "duration": 0.0,
-        "securityMargin": 0,
+        "duration": "00:15:30",
+        "securityMargin": "07:00:00",
         "startTime": "2023-03-29T00:00:00",         
         "endTime": "",                 
         "routingOperationId": "cd2f1a92-7312-4b3d-41ba-08dca71daa56",
@@ -376,13 +376,11 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     :return None
     """
 
-    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
-
     # Synchronize production order
-    p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
+    p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
+        p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
 
         if _has_been_posted is not None and _has_been_posted is True:
             # Sync worker time
