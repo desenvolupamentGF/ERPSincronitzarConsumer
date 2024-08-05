@@ -1,5 +1,6 @@
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
+# TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 ENVIRONMENT = 1
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
@@ -54,6 +55,9 @@ URL_DEPARTMENTS = '/departments'
 URL_TIMETABLES = '/timetables'
 URL_WORKFORCES = '/workforces'
 URL_CREDITRISKS = '/creditRisks'
+URL_PRODUCTIONORDERS = '/productionOrders'
+URL_OPERATIONS = '/operations'
+URL_WORKERTIMETICKETS = '/workerTimeTickets'
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -341,6 +345,70 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
             
 ####################################################################################################
 
+def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    logging.info('New message: productionOrder - ' + str(data['correlationId']))
+    """
+    :param data: dict -> {
+        "code": "14644A28",
+        "startDate": "2023-03-29T00:00:00", 
+        "endDate": "",
+        "productId": "eade57a1-a37b-405f-14c1-08dca71bb0ae",
+        "processSheetId": "9702b405-b540-4439-d129-08dca71e91b4",
+        "quantity": "1",
+        "simulationId": "",
+        "name": "Fabricació alumini",
+        "description": "VIAS Y CONSTRUCCIONES, S.A._2785 CARPINTERIA FA3P  PLANTA ALTELL - FACHADA NOR",
+        "duration": 0.0,
+        "securityMargin": 0,
+        "startTime": "2023-03-29T00:00:00",         
+        "endTime": "",                 
+        "routingOperationId": "cd2f1a92-7312-4b3d-41ba-08dca71daa56",
+        "workerTimes": [
+            {
+                "workerId": "44935379A",
+                "startDate": "2023-02-17T00:00:00",
+                "totalTime": "07:00:00",
+                "correlationId": "44935379A"
+            }
+        ],
+        "correlationId": "14644A28"
+    }
+    :return None
+    """
+
+    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
+
+    # Synchronize production order
+    p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+    if _has_been_posted is not None and _has_been_posted is True:
+        p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+        if _has_been_posted is not None and _has_been_posted is True:
+            # Sync worker time
+            workerTimes = data['workerTimes']   
+            for workerTime in workerTimes:
+
+                # We need the GUID for the worker  
+                get_req = requests.get(URL_API + URL_WORKERS + f"?search={workerTime['workerId']}", headers=headers,
+                                       verify=False, timeout=CONN_TIMEOUT)
+
+                if get_req.status_code == 200:                
+                    item = next((i for i in get_req.json() if i["identificationNumber"].casefold() == workerTime['workerId'].casefold()), None)
+
+                    if item is not None:
+                        workerTime['workerId'] = item["id"]
+                    else:
+                        logging.error('Error worker not found:' + workerTime['workerId'])
+                        return            
+
+                workerTime['productionOrderId'] = str(p_prodOrder_id)
+                workerTime['productionOrderOperationId'] = data['routingOperationId']
+                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['startDate'], producerData=workerTime, data=workerTime, filter_name="p_prodOrder_id", filter_value=workerTime['p_prodOrder_id'], endPoint=endPoint, origin=origin, helper="")
+
+        
+####################################################################################################
+
 def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
     logging.info('New message: treballador - ' + str(data['correlationId']))
     """
@@ -401,7 +469,8 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                 "correlationId": "46457469E"                
             }
         ],        
-        "correlationId": "46457469E"
+        "correlationId": "46457469E",
+        "oldCodeBiostar": "746"
     }
     :return None
     """
@@ -434,7 +503,7 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
             return            
 
     # Synchronize worker
-    _glam_worker_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
+    _glam_worker_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper=str(data['oldCodeBiostar'].strip()))
 
     if _glam_worker_id is not None:  
 
@@ -1512,6 +1581,14 @@ def main():
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_WORKFORCES                    
                     sync_workforces(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
+
+                # Production Orders
+                if data['queueType'] == "PRODUCTIONORDERS_PRODUCTIONORDERS":
+                    GLOBAL_ENDPOINT = 'Production Orders ERP GF'
+                    GLOBAL_ORIGIN = 'Access-Nono'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_PRODUCTIONORDERS                    
+                    sync_productionOrders(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
