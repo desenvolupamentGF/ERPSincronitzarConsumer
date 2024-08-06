@@ -1,7 +1,7 @@
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
-ENVIRONMENT = 0
+ENVIRONMENT = 1
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
 # TEST (0) O PRODUCCIÓ (1) ... BE CAREFUL!!!
@@ -351,7 +351,7 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     :param data: dict -> {
         "code": "14644A28",
         "startDate": "2023-03-29T00:00:00", 
-        "endDate": "",
+        "endDate": "2024-12-31T00:00:00",
         "productId": "eade57a1-a37b-405f-14c1-08dca71bb0ae",
         "processSheetId": "9702b405-b540-4439-d129-08dca71e91b4",
         "quantity": "1",
@@ -359,16 +359,16 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         "name": "Fabricació alumini",
         "description": "VIAS Y CONSTRUCCIONES, S.A._2785 CARPINTERIA FA3P  PLANTA ALTELL - FACHADA NOR",
         "duration": "00:15:30",
-        "securityMargin": "07:00:00",
+        "securityMargin": "00:10:00",
         "startTime": "2023-03-29T00:00:00",         
-        "endTime": "",                 
+        "endTime": "2024-12-31T00:00:00",                 
         "routingOperationId": "cd2f1a92-7312-4b3d-41ba-08dca71daa56",
         "workerTimes": [
             {
-                "workerId": "44935379A",
+                "workerId": "0199a29a-cea2-4dbd-d6ec-08dc97981923",
                 "startDate": "2023-02-17T00:00:00",
                 "totalTime": "07:00:00",
-                "correlationId": "44935379A"
+                "correlationId": "1"
             }
         ],
         "correlationId": "14644A28"
@@ -380,29 +380,15 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
+        p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
 
         if _has_been_posted is not None and _has_been_posted is True:
             # Sync worker time
             workerTimes = data['workerTimes']   
             for workerTime in workerTimes:
-
-                # We need the GUID for the worker  
-                get_req = requests.get(URL_API + URL_WORKERS + f"?search={workerTime['workerId']}", headers=headers,
-                                       verify=False, timeout=CONN_TIMEOUT)
-
-                if get_req.status_code == 200:                
-                    item = next((i for i in get_req.json() if i["identificationNumber"].casefold() == workerTime['workerId'].casefold()), None)
-
-                    if item is not None:
-                        workerTime['workerId'] = item["id"]
-                    else:
-                        logging.error('Error worker not found:' + workerTime['workerId'])
-                        return            
-
                 workerTime['productionOrderId'] = str(p_prodOrder_id)
-                workerTime['productionOrderOperationId'] = data['routingOperationId']
-                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['startDate'], producerData=workerTime, data=workerTime, filter_name="p_prodOrder_id", filter_value=workerTime['p_prodOrder_id'], endPoint=endPoint, origin=origin, helper="")
+                workerTime['productionOrderOperationId'] = str(p_operation_id)
+                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['correlationId'], producerData=workerTime, data=workerTime, filter_name="productionOrderId", filter_value=workerTime['productionOrderId'], endPoint=endPoint, origin=origin, helper="")
 
         
 ####################################################################################################
