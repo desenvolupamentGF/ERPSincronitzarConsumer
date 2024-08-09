@@ -349,7 +349,7 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     logging.info('New message: productionOrder - ' + str(data['correlationId']))
     """
     :param data: dict -> {
-        "code": "14644A28",
+        "counter": "OF/14644A28",
         "startDate": "2023-03-29T00:00:00", 
         "endDate": "2024-12-31T00:00:00",
         "productId": "eade57a1-a37b-405f-14c1-08dca71bb0ae",
@@ -377,10 +377,10 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     """
 
     # Synchronize production order
-    p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
+    p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="counter", filter_value=str(data['counter']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="code", filter_value=str(data['code']).strip(), endPoint=endPoint, origin=origin, helper="")
+        p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="counter", filter_value=str(data['counter']).strip(), endPoint=endPoint, origin=origin, helper="")
 
         if _has_been_posted is not None and _has_been_posted is True:
             # Sync worker time
