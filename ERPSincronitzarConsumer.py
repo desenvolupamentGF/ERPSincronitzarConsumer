@@ -185,6 +185,12 @@ class RabbitPublisherService():
 
 ####################################################################################################
 
+def save_log_database(dbOrigin, mycursor, endPoint, message, typeLog):
+    sql = "INSERT INTO ERP_GF.ERPIntegrationLog (dateLog, companyId, endpoint, deploy, message, typeLog) VALUES (NOW(), %s, %s, %s, %s, %s) "
+    val = (str(GLAMSUITE_DEFAULT_COMPANY_ID), str(endPoint), str(ENVIRONMENT), str(message), str(typeLog))
+    mycursor.execute(sql, val)
+    dbOrigin.commit()    
+
 def get_value_from_database(mycursor, correlation_id: str, url, endPoint, origin):
     mycursor.execute("SELECT erpGFId, hash FROM ERP_GF.ERPIntegration WHERE companyId = '" + str(GLAMSUITE_DEFAULT_COMPANY_ID) + "' AND endpoint = '" + str(endPoint) + "' AND origin = '" + str(origin) + "' AND correlationId = '" + str(correlation_id).replace("'", "''") + "' AND deploy = " + str(ENVIRONMENT) + " AND callType = '" + str(url) + "'")
     myresult = mycursor.fetchall()
@@ -233,14 +239,18 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             req = requests.post(url=URL_API + url, data=json.dumps(data),     
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
-            logging.error('Error posting to GlamSuite with ' + key + '. Err: ' + str(e))
+            message = 'Error posting to GlamSuite with ' + key + '. Err: ' + str(e)
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             raise Exception('POST WITH EXCEPTION ERROR!!!')
     elif glam_id is not None and str(old_data_hash) != str(data_hash):
         try:
             req = requests.put(url=URL_API + url + "/" + str(glam_id), data=json.dumps(data), 
                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
-            logging.error('Error putting to GlamSuite with ' + key + '. Err: ' + str(e))
+            message = 'Error putting to GlamSuite with ' + key + '. Err: ' + str(e)
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             raise Exception('PUT WITH EXCEPTION ERROR!!!')
     else:
         return glam_id, False
@@ -275,18 +285,22 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                     update_value_from_database(dbOrigin, mycursor, str(correlation_id), id, str(data_hash), url, endPoint, origin, helper)
                     return id, True
                 else:
-                    logging.error('Item not found. Error posting to GlamSuite with ' + key)
+                    message = 'Item not found. Error posting to GlamSuite with ' + key
+                    save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+                    logging.error(message)
             return None, False
         except Exception as e:
-            logging.error('Error searching in GlamSuite with ' + key + '. Err: ' + str(e))
+            message = 'Error searching in GlamSuite with ' + key + '. Err: ' + str(e)
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             raise Exception('SEARCH WITH EXCEPTION ERROR!!!')
     elif req.status_code == 404:  # Not found. (PUT id not found)
         delete_value_from_database(dbOrigin, mycursor, correlation_id, url, endPoint, origin)
         return None, False
     else:
-        logging.error(
-            'Error sync:' + key + '\n    json:' + json.dumps(data) +
-            '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content))  
+        message = 'Error sync:' + key + '\n    json:' + json.dumps(data) + '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content)
+        save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+        logging.error(message)
         return None, False
 
 ####################################################################################################
@@ -341,7 +355,9 @@ def sync_usuaris(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 
         req = requests.patch(url=URL_API + URL_USERS + '/' + str(p_glam_id), data=json.dumps(dataStatus), headers=headers)
         if (req.status_code != 200 and req.status_code != 400): # (success code - 200 or 400)
-            logging.error('PATCH with error when activating/deactivating user. status_code= ' + str(req.status_code))
+            message = 'PATCH with error when activating/deactivating user. status_code= ' + str(req.status_code)
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             
 ####################################################################################################
 
@@ -470,7 +486,9 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         if item is not None:
             data['nationality'] = item["id"]
         else:
-            logging.error('Error nationality not found:' + data['nationality'])
+            message = 'Error nationality not found:' + data['nationality']
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             return            
 
     # We need the GUID for the country
@@ -483,7 +501,9 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
         if item is not None:
             data['countryId'] = item["id"]
         else:
-            logging.error('Error country not found:' + data['countryId'])
+            message = 'Error country not found:' + data['countryId']
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             return            
 
     # Synchronize worker
@@ -504,7 +524,9 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                                data=json.dumps(data), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
-                logging.error('Error sync:' + URL_WORKERS + ":" + str(_glam_worker_id) + " With error: " + str(req.status_code))
+                message = 'Error sync:' + URL_WORKERS + ":" + str(_glam_worker_id) + " With error: " + str(req.status_code)
+                save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+                logging.error(message)
 
         if _has_been_posted is not None and _has_been_posted is True:
             # Sync worker costs
@@ -538,7 +560,9 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                             if item is not None:
                                 contract['departmentId'] = item["id"]
                             else:
-                                logging.error('Error department not found:' + contract['departmentId'])
+                                message = 'Error department not found:' + contract['departmentId']
+                                save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+                                logging.error(message)
                                 continue # NEXT ONE           
 
                         # We need the GUID for the workforce
@@ -551,8 +575,10 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                             if item is not None:
                                 contract['workforceId'] = item["id"]
                             else:
-                               logging.error('Error workforce not found:' + contract['workforceId'])
-                               continue # NEXT ONE           
+                                message = 'Error workforce not found:' + contract['workforceId']
+                                save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+                                logging.error(message)
+                                continue # NEXT ONE           
 
                     # Synchronize contract
                     _glam_contract_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERS + '/' + str(_glam_worker_id) + URL_CONTRACTS, correlation_id=contract['startDate'], producerData=contract, data=contract, filter_name="startDate", filter_value=contract['startDate'].replace('Z',''), endPoint=endPoint, origin=origin, helper="")
@@ -597,7 +623,9 @@ def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoi
                                data=json.dumps(put_data), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
-                logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(req.status_code))
+                message = 'Error sync:' + URL_CONTAINERS + ":" + str(_containerId) + " With error: " + str(req.status_code)
+                save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+                logging.error(message)
 
 ####################################################################################################
 
@@ -657,7 +685,9 @@ def sync_projects(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, 
                            data=json.dumps(put_data), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 200:
-            logging.error('Error sync:' + URL_LOCATIONS + ":" + p_correlation_id + " With error: " + str(req.status_code))
+            message = 'Error sync:' + URL_CONTAINERS + ":" + str(_containerId) + " With error: " + str(req.status_code)
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
 
 def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: product - ' + str(data['correlationId']))
@@ -726,7 +756,9 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                                data=json.dumps(put_data), headers=headers,
                                verify=False, timeout=CONN_TIMEOUT)
             if req.status_code != 200:
-                logging.error('Error put products ' + str(correlation_id) + '. PUT with error.')
+                message = 'Error put products ' + str(correlation_id) + '. PUT with error.'
+                save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+                logging.error(message)
             else:     
                 update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(_glam_product_id), str(put_data_hash), URL_PRODUCTS + "/" + str(_glam_product_id) + "/PUT", endPoint, origin, "")
 
@@ -781,7 +813,9 @@ def sync_products(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
                                 data=json.dumps(patch_data), headers=headers,
                                 verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 200:
-            logging.error('Error patch products ' + str(correlation_id) + '. PATCH with error.')
+            message = 'Error patch products ' + str(correlation_id) + '. PATCH with error.'
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
 
 def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, product_cost_data, product_cost_data_hash, product_glam_id, product_cost, cost_glam_id, endPoint, origin):
     # Obtain element to update
@@ -810,12 +844,16 @@ def sync_cost(dbOrigin, mycursor, headers, correlation_id, product_cost_url, pro
                 if req_put.status_code == 200:
                      update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
                 else:
-                    logging.error('Error put cost ' + str(correlation_id) + '. PUT with error.')                    
+                    message = 'Error put cost ' + str(correlation_id) + '. PUT with error.'
+                    save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+                    logging.error(message)
             update_value_from_database(dbOrigin, mycursor, str(correlation_id), str(item['id']), str(product_cost_data_hash), product_cost_url, endPoint, origin, "")
         else:
             if cost_glam_id is not None:
                 delete_value_from_database(dbOrigin, mycursor, correlation_id, product_cost_url, endPoint, origin)
-            logging.error('Error processing Cost with url:' + product_cost_url)
+            message = 'Error processing Cost with url:' + product_cost_url
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
 
 ####################################################################################################
 
@@ -922,7 +960,9 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
             dataCliente = data['dataCliente'].copy()
             dataCliente['countryId'] = item["id"]
         else:
-            logging.error('Error country not found:' + data['countryId'])
+            message = 'Error country not found:' + data['countryId']
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             return            
 
     # Synchronize organization
@@ -937,7 +977,9 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                              data=json.dumps(patch_data), headers=headers,
                              verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 200:
-            logging.error('PATCH with error when activating/deactivating organization with error: ' + str(req.status_code))
+            message = 'PATCH with error when activating/deactivating organization with error: ' + str(req.status_code)
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
 
         if data['accountP'] != "":
             # The organization is a provider too
@@ -1032,7 +1074,9 @@ def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(data['organizationId']) + URL_CONTACTS, data=json.dumps(post_data),     
                             headers=headers, verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 201:
-            logging.error('Error post when assigning person as contact of the organization/client')
+            message = 'Error post when assigning person as contact of the organization/client'
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
 
 def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: proveïdorContacte - ' + str(data['correlationId']))
@@ -1064,7 +1108,9 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
             logging.warning('Person already exists. Skip to next one.')
             return
     else:
-        logging.error('Search for the person failed, check why: ' + str(data['email']) + ' ' + str(data['nif']))
+        message = 'Search for the person failed, check why: ' + str(data['email']) + ' ' + str(data['nif'])
+        save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+        logging.error(message)
         return 
 
     # We need to get the GUID for the organization
@@ -1077,7 +1123,9 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
         if item is not None:
             organizationId = item["id"]
         else:
-            logging.error('Error organization not found: ' + data['nif'])
+            message = 'Error organization not found: ' + data['nif']
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
             return            
 
     # Synchronize person
@@ -1088,7 +1136,9 @@ def sync_proveidorsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, 
         req = requests.post(url=URL_API + URL_ORGANIZATIONS + '/' + str(organizationId) + URL_CONTACTS, data=json.dumps(post_data),     
                             headers=headers, verify=False, timeout=CONN_TIMEOUT)
         if req.status_code != 201:
-            logging.error('Error post when assigning person as contact of the organization/proveidor')
+            message = 'Error post when assigning person as contact of the organization/proveidor'
+            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
+            logging.error(message)
 
 # INICI CODE OBSOLET (NO TORNAR A ACTIVAR! - ES VA FER UNA EXECUCIÓ ÚNICA EL 27/06/2024)  
 #
@@ -1435,7 +1485,9 @@ def main():
         dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
         mycursor = dbOrigin.cursor()        
     except Exception as e:
-        logging.error('   Unexpected error when connecting to MySQL emmegi database: ' + str(e))
+        message = '   Unexpected error when connecting to MySQL emmegi database: ' + str(e)
+        save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
+        logging.error(message)
         send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
         disconnectMySQL(dbOrigin)
         sys.exit(1)
@@ -1444,7 +1496,9 @@ def main():
         # Populate some global values
         global_values()
     except Exception as e:
-        logging.error('   Unexpected error calculating global values: ' + str(e))
+        message = '   Unexpected error calculating global values: ' + str(e)
+        save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
+        logging.error(message)
         send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
         disconnectMySQL(dbOrigin)
         sys.exit(1)
@@ -1579,7 +1633,9 @@ def main():
             myRabbit.channel.start_consuming()
         
         except Exception as e:
-            logging.error('   Unexpected error processing queued messages: ' + str(e) + ". GLOBAL_CORRELATIONID=" + str(GLOBAL_CORRELATIONID) + " GLOBAL_CALLTYPE=" + str(GLOBAL_CALLTYPE) + " GLOBAL_ENDPOINT=" + str(GLOBAL_ENDPOINT) + " GLOBAL_ORIGIN=" + str(GLOBAL_ORIGIN))
+            message = '   Unexpected error processing queued messages: ' + str(e) + ". GLOBAL_CORRELATIONID=" + str(GLOBAL_CORRELATIONID) + " GLOBAL_CALLTYPE=" + str(GLOBAL_CALLTYPE) + " GLOBAL_ENDPOINT=" + str(GLOBAL_ENDPOINT) + " GLOBAL_ORIGIN=" + str(GLOBAL_ORIGIN)
+            save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
+            logging.error(message)
             send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
 
             reconnect = False
@@ -1596,7 +1652,9 @@ def main():
                     logging.info('   Successfully reconnected. Execution continues...')
                     send_email("ERPSincronitzarConsumer - SUCCESSFULLY RECONNECTED", ENVIRONMENT, now, datetime.datetime.now(), "OK")  
                 except Exception as e:
-                    logging.error('   Unexpected error reconnecting to database&rabbit: ' + str(e))
+                    message = '   Unexpected error reconnecting to database&rabbit: ' + str(e)
+                    save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
+                    logging.error(message)
 
     #logging.debug('debug message')
     #logging.info('info message')
