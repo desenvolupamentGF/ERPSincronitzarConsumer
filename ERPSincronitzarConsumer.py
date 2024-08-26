@@ -1486,7 +1486,6 @@ def main():
         mycursor = dbOrigin.cursor()        
     except Exception as e:
         message = '   Unexpected error when connecting to MySQL emmegi database: ' + str(e)
-        save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
         logging.error(message)
         send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
         disconnectMySQL(dbOrigin)
