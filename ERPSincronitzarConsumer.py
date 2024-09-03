@@ -1620,7 +1620,7 @@ def main():
                     sync_workforces(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
                 # Production Orders
-                if data['queueType'] == "PRODUCTIONORDERS_PRODUCTIONORDERS":
+                if data['queueType'] == "PRODUCTIONORDERS_PRODUCTIONORDERS_NONO":
                     GLOBAL_ENDPOINT = 'Production Orders ERP GF'
                     GLOBAL_ORIGIN = 'Access-Nono'
                     GLOBAL_CORRELATIONID = data['correlationId']
