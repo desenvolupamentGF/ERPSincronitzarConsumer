@@ -1626,6 +1626,12 @@ def main():
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_PRODUCTIONORDERS                    
                     sync_productionOrders(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
+                if data['queueType'] == "PRODUCTIONORDERS_PRODUCTIONORDERS_SESAME":
+                    GLOBAL_ENDPOINT = 'Production Orders ERP GF'
+                    GLOBAL_ORIGIN = 'Sesame'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_PRODUCTIONORDERS                    
+                    sync_productionOrders(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
