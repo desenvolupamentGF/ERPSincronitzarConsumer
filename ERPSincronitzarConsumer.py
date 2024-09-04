@@ -393,10 +393,10 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     """
 
     # Synchronize production order
-    p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="documentNumber", filter_value=str(data['documentNumber']).strip(), endPoint=endPoint, origin=origin, helper="")
+    p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="number", filter_value=str(data['documentNumber']).strip(), endPoint=endPoint, origin=origin, helper="")
 
     if _has_been_posted is not None and _has_been_posted is True:
-        p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="documentNumber", filter_value=str(data['documentNumber']).strip(), endPoint=endPoint, origin=origin, helper="")
+        p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="productionOrderId", filter_value=str(p_prodOrder_id).strip(), endPoint=endPoint, origin=origin, helper="")
 
         if _has_been_posted is not None and _has_been_posted is True:
             # Sync worker time
