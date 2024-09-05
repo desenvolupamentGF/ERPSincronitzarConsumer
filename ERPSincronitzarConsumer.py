@@ -236,7 +236,8 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
     # Nothing if hash is the same
     if glam_id is None:
         try:
-            req = requests.post(url=URL_API + url, data=json.dumps(data),     
+            dataJson = json.dumps(data)
+            req = requests.post(url=URL_API + url, data=dataJson,     
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             message = 'Error posting to GlamSuite with ' + key + '. Err: ' + str(e)
@@ -245,7 +246,8 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             raise Exception('POST WITH EXCEPTION ERROR!!!')
     elif glam_id is not None and str(old_data_hash) != str(data_hash):
         try:
-            req = requests.put(url=URL_API + url + "/" + str(glam_id), data=json.dumps(data), 
+            dataJson = json.dumps(data)
+            req = requests.put(url=URL_API + url + "/" + str(glam_id), data=dataJson, 
                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
             message = 'Error putting to GlamSuite with ' + key + '. Err: ' + str(e)
