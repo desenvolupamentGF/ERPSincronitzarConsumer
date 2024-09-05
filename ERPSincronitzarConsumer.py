@@ -381,6 +381,7 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         "startTime": "2023-03-29T00:00:00",         
         "endTime": "2024-12-31T00:00:00",                 
         "routingOperationId": "cd2f1a92-7312-4b3d-41ba-08dca71daa56",
+        "warehouseId": "04cdd84e-fca9-4f7a-9430-08dc83ccd0d3",
         "workerTimes": [
             {
                 "workerId": "0199a29a-cea2-4dbd-d6ec-08dc97981923",
