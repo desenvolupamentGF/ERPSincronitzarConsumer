@@ -1076,13 +1076,13 @@ def sync_projects_gf3d(dbOrigin, mycursor, headers, data: dict, endPoint, origin
     logging.info('New message: project_gf3d - ' + str(data['correlationId']))
     """
     :param data: dict -> {
-        "code": "12541",
+        "code": "OT/12541",
         "name": "AVINTIA - VIVENDES PORT BADALONA",
         "organizationId": "f57b1d94-5692-4972-03a4-08dcc5b1d0a1",
         "documentTypeId": "b485526b-7034-46e1-0e11-08dcd291593f",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "date": "2017-05-15T00:00:00.000Z",
-        "correlationId": "12541",
+        "correlationId": "OT/12541",
         }
     }
     :return None
