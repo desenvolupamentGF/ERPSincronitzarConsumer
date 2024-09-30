@@ -1588,7 +1588,7 @@ def main():
                     sync_families(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "MERCADERIES_PROJECTES":
                     GLOBAL_ENDPOINT = 'Mercaderies ERP GF'
-                    GLOBAL_ORIGIN = 'Emmegi'
+                    GLOBAL_ORIGIN = 'Teowin'
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_LOCATIONS                    
                     maskValue = calculate_mask_value(glo_warehouse_location_mask, glo_zone_code, glo_warehouse_code, glo_plant_code, glo_geolocation_code, glo_aisle_code, glo_rack_code, glo_shelf_code, str(data['correlationId']).strip())
