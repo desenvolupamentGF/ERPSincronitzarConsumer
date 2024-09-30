@@ -670,8 +670,8 @@ def sync_families(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
 
     synch_by_database(dbOrigin, mycursor, headers, url=URL_FAMILIES, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
-def sync_projects_fppro(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
-    logging.info('New message: project_fppro - ' + str(data['correlationId']))
+def sync_projects_locations(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
+    logging.info('New message: project_location - ' + str(data['correlationId']))
     """
     Sincronitzem els projectes. A 11/22 només creem ubicacions.
     :param data: dict -> {
@@ -1073,8 +1073,8 @@ def sync_organizations(dbOrigin, mycursor, headers, data: dict, endPoint, origin
                         if req.status_code == 201:                            
                             update_value_from_database(dbOrigin, mycursor, req.json()['id'], p_glam_customer_id, str(data_hash), url, endPoint, origin, "")
 
-def sync_projects_gf3d(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    logging.info('New message: project_gf3d - ' + str(data['correlationId']))
+def sync_projects(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    logging.info('New message: project - ' + str(data['correlationId']))
     """
     :param data: dict -> {
         "code": "OT/12541",
@@ -1592,7 +1592,7 @@ def main():
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_LOCATIONS                    
                     maskValue = calculate_mask_value(glo_warehouse_location_mask, glo_zone_code, glo_warehouse_code, glo_plant_code, glo_geolocation_code, glo_aisle_code, glo_rack_code, glo_shelf_code, str(data['correlationId']).strip())
-                    sync_projects_fppro(dbOrigin, mycursor, headers, maskValue, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
+                    sync_projects_locations(dbOrigin, mycursor, headers, maskValue, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "MERCADERIES_PRODUCTES":
                     GLOBAL_ENDPOINT = 'Mercaderies ERP GF'
                     GLOBAL_ORIGIN = 'Emmegi'
@@ -1635,7 +1635,7 @@ def main():
                     GLOBAL_ORIGIN = 'Teowin'
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_ORGANIZATIONS                    
-                    sync_projects_gf3d(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
+                    sync_projects(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "CLIENTS_CONTACTES":
                     GLOBAL_ENDPOINT = 'Clients ERP GF'
                     GLOBAL_ORIGIN = 'Pipedrive'
