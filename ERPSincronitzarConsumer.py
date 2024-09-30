@@ -675,14 +675,14 @@ def sync_projects_locations(dbOrigin, mycursor, headers, maskValue, data: dict, 
     """
     Sincronitzem els projectes. A 11/22 només creem ubicacions.
     :param data: dict -> {
-        "correlationId": "0523",
-        "name": "Obra que hi ha a Brasil",
-        "zoneId": "123ABC",
-        "containerTypeId": "123ABC",
-        "aisle": "A",
-        "rack": "A",
-        "shelf": "A",
-        "position": "0523",
+        "correlationId": "12587",
+        "name": "OT/12587 - URCOTEX - HOTEL TRYP APOLO",
+        "zoneId": "c3423fbb-4d5e-44df-cb12-08dce1621ac2",
+        "containerTypeId": "d882fd8a-9da7-440b-b47e-08dc339eeaea",
+        "aisle": "0",
+        "rack": "0",
+        "shelf": "0",
+        "position": "12587",
         "preferential": False
     }
     :return: None
