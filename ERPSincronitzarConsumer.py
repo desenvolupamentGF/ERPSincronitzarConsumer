@@ -401,7 +401,7 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
 
     # We need the project details
-    ot = data['correlationId'][3:8]
+    ot = data['correlationId'][0:8]
     get_req = requests.get(URL_API + URL_PROJECTS + "/search" + f"?search={str(ot)}", headers=headers,
                            verify=False, timeout=CONN_TIMEOUT)
     if get_req.status_code == 200:                
