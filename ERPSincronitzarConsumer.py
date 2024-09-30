@@ -60,6 +60,7 @@ URL_OPERATIONS = '/operations'
 URL_WORKERTIMETICKETS = '/workerTimeTickets'
 URL_PROJECTS = '/projects'
 URL_WBS = '/wbs'
+URL_CONTAINERRESERVATIONS = '/containerReservations'
 
 URL_ZONES = '/zones'
 URL_WAREHOUSES = '/warehouses'
@@ -370,7 +371,7 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
     """
     :param data: dict -> {
         "documentNumber": "OF/14644A28",
-        "startDate": "2023-03-29T00:00:00", 
+        "startDate": "2024-01-01T00:00:00", 
         "endDate": "2024-12-31T00:00:00",
         "productId": "eade57a1-a37b-405f-14c1-08dca71bb0ae",
         "processSheetId": "9702b405-b540-4439-d129-08dca71e91b4",
@@ -378,10 +379,10 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         "simulationId": "",
         "name": "Fabricació alumini",
         "description": "VIAS Y CONSTRUCCIONES, S.A._2785 CARPINTERIA FA3P  PLANTA ALTELL - FACHADA NOR",
-        "duration": "00:15:30",
+        "duration": "04:00:00",
         "securityMargin": "00:10:00",
-        "startTime": "2023-03-29T00:00:00",         
-        "endTime": "2024-12-31T00:00:00",                 
+        "startTime": "2024-01-01T08:00:00",         
+        "endTime": "2024-01-01T12:00:00",                 
         "routingOperationId": "cd2f1a92-7312-4b3d-41ba-08dca71daa56",
         "warehouseId": "04cdd84e-fca9-4f7a-9430-08dc83ccd0d3",
         "workerTimes": [
@@ -1082,6 +1083,7 @@ def sync_projects_gf3d(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         "documentTypeId": "b485526b-7034-46e1-0e11-08dcd291593f",
         "companyId": "2492b776-1548-4485-3019-08dc339adb32",
         "date": "2017-05-15T00:00:00.000Z",
+        "reservationTypeId": "d7ffe505-bd45-454d-22b5-08dc383724a4",
         "correlationId": "OT/12541",
         }
     }
@@ -1101,6 +1103,11 @@ def sync_projects_gf3d(dbOrigin, mycursor, headers, data: dict, endPoint, origin
         # Synchronize wbs
         wbs_data = {"code": "IMP", "name": "Import", "parentId": str(parentId), "correlationId": str(data['correlationId'])}
         p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PROJECTS + '/' + str(p_glam_id) + URL_WBS, correlation_id=data['correlationId'], producerData=wbs_data, data=wbs_data, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
+
+        # Synchronize reserva
+        ot = data['code'][3:]
+        wbs_reserva = {"name": data['code'] + ' ' + data['name'], "reference": str(ot), "reservationTypeId": str(data['reservationTypeId']), "correlationId": str(data['correlationId'])}
+        p_glam_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_CONTAINERRESERVATIONS, correlation_id=data['correlationId'], producerData=wbs_reserva, data=wbs_reserva, filter_name="name", filter_value=str(data['name']).strip(), endPoint=endPoint, origin=origin, helper="")
 
 def sync_clientsContactes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
     logging.info('New message: clientContacte - ' + str(data['correlationId']))
