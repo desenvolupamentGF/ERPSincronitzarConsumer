@@ -243,7 +243,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             req = requests.post(url=URL_API + url, data=dataJson,     
                                 headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
-            message = 'Error posting to GlamSuite with ' + key + '. Err: ' + str(e)
+            message = 'Error posting to GlamSuite with ' + key + '. Err: ' + str(e)[0:1500]
             save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
             logging.error(message)
             raise Exception('POST WITH EXCEPTION ERROR!!!')
@@ -253,7 +253,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
             req = requests.put(url=URL_API + url + "/" + str(glam_id), data=dataJson, 
                                headers=headers, verify=False, timeout=CONN_TIMEOUT)
         except Exception as e:
-            message = 'Error putting to GlamSuite with ' + key + '. Err: ' + str(e)
+            message = 'Error putting to GlamSuite with ' + key + '. Err: ' + str(e)[0:1500]
             save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
             logging.error(message)
             raise Exception('PUT WITH EXCEPTION ERROR!!!')
@@ -295,7 +295,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
                     logging.error(message)
             return None, False
         except Exception as e:
-            message = 'Error searching in GlamSuite with ' + key + '. Err: ' + str(e)
+            message = 'Error searching in GlamSuite with ' + key + '. Err: ' + str(e)[0:1500]
             save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
             logging.error(message)
             raise Exception('SEARCH WITH EXCEPTION ERROR!!!')
@@ -303,7 +303,7 @@ def synch_by_database(dbOrigin, mycursor, headers, url: str, correlation_id: str
         delete_value_from_database(dbOrigin, mycursor, correlation_id, url, endPoint, origin)
         return None, False
     else:
-        message = 'Error sync:' + key + '\n    json:' + json.dumps(data) + '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content)
+        message = 'Error sync:' + key + '\n    json:' + str(json.dumps(data))[0:500] + '\n    HTTP Status: ' + str(req.status_code) + ' Content: ' + str(req.content)[0:500]
         save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
         logging.error(message)
         return None, False
@@ -1545,7 +1545,7 @@ def main():
         dbOrigin = connectMySQL(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE)
         mycursor = dbOrigin.cursor()        
     except Exception as e:
-        message = '   Unexpected error when connecting to MySQL emmegi database: ' + str(e)
+        message = '   Unexpected error when connecting to MySQL emmegi database: ' + str(e)[0:1500]
         logging.error(message)
         send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
         disconnectMySQL(dbOrigin)
@@ -1555,7 +1555,7 @@ def main():
         # Populate some global values
         global_values()
     except Exception as e:
-        message = '   Unexpected error calculating global values: ' + str(e)
+        message = '   Unexpected error calculating global values: ' + str(e)[0:1500]
         save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
         logging.error(message)
         send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")
@@ -1704,7 +1704,7 @@ def main():
             myRabbit.channel.start_consuming()
         
         except Exception as e:
-            message = '   Unexpected error processing queued messages: ' + str(e) + ". GLOBAL_CORRELATIONID=" + str(GLOBAL_CORRELATIONID) + " GLOBAL_CALLTYPE=" + str(GLOBAL_CALLTYPE) + " GLOBAL_ENDPOINT=" + str(GLOBAL_ENDPOINT) + " GLOBAL_ORIGIN=" + str(GLOBAL_ORIGIN)
+            message = '   Unexpected error processing queued messages: ' + str(e)[0:1500] + ". GLOBAL_CORRELATIONID=" + str(GLOBAL_CORRELATIONID) + " GLOBAL_CALLTYPE=" + str(GLOBAL_CALLTYPE) + " GLOBAL_ENDPOINT=" + str(GLOBAL_ENDPOINT) + " GLOBAL_ORIGIN=" + str(GLOBAL_ORIGIN)
             save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
             logging.error(message)
             send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
@@ -1723,7 +1723,7 @@ def main():
                     logging.info('   Successfully reconnected. Execution continues...')
                     send_email("ERPSincronitzarConsumer - SUCCESSFULLY RECONNECTED", ENVIRONMENT, now, datetime.datetime.now(), "OK")  
                 except Exception as e:
-                    message = '   Unexpected error reconnecting to database&rabbit: ' + str(e)
+                    message = '   Unexpected error reconnecting to database&rabbit: ' + str(e)[0:1500]
                     save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
                     logging.error(message)
 
