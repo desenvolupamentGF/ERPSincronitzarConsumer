@@ -412,8 +412,6 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
 
             if _has_been_posted is not None and _has_been_posted is True:
 
-                time.sleep(1) # Sleep for 1 second (Comentari de Jordi Dilmè: per donar temps al backend per resoldre els events d’integració entre dominis, que en el cas de les production orders n’hi ha)
-
                 p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="productionOrderId", filter_value=str(p_prodOrder_id).strip(), endPoint=endPoint, origin=origin, helper="")
 
 def sync_productionOrdersKKKK(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
@@ -470,8 +468,6 @@ def sync_productionOrdersKKKK(dbOrigin, mycursor, headers, data: dict, endPoint,
             p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="number", filter_value=str(data['documentNumber']).strip(), endPoint=endPoint, origin=origin, helper="")
 
             if _has_been_posted is not None and _has_been_posted is True:
-
-                time.sleep(1) # Sleep for 1 second (Comentari de Jordi Dilmè: per donar temps al backend per resoldre els events d’integració entre dominis, que en el cas de les production orders n’hi ha)
 
                 p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="productionOrderId", filter_value=str(p_prodOrder_id).strip(), endPoint=endPoint, origin=origin, helper="")
 
