@@ -384,6 +384,7 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
         "endTime": "2024-01-01T12:00:00",                 
         "routingOperationId": "cd2f1a92-7312-4b3d-41ba-08dca71daa56",
         "warehouseId": "04cdd84e-fca9-4f7a-9430-08dc83ccd0d3",
+        "stateId": 1,
         "correlationId": "OF/14644A28"
     }
     :return None
@@ -414,25 +415,10 @@ def sync_productionOrders(dbOrigin, mycursor, headers, data: dict, endPoint, ori
 
                 p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="productionOrderId", filter_value=str(p_prodOrder_id).strip(), endPoint=endPoint, origin=origin, helper="")
 
-def sync_productionOrdersKKKK(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
-    logging.info('New message: productionOrder - ' + str(data['correlationId']))
+def sync_workingTimes(dbOrigin, mycursor, headers, data: dict, endPoint, origin):
+    logging.info('New message: workerTime - ' + str(data['correlationId']))
     """
     :param data: dict -> {
-        "documentNumber": "OF/14644A28",
-        "startDate": "2024-01-01T00:00:00", 
-        "endDate": "2024-12-31T00:00:00",
-        "productId": "eade57a1-a37b-405f-14c1-08dca71bb0ae",
-        "processSheetId": "9702b405-b540-4439-d129-08dca71e91b4",
-        "quantity": "1",
-        "simulationId": "",
-        "name": "Fabricació alumini",
-        "description": "VIAS Y CONSTRUCCIONES, S.A._2785 CARPINTERIA FA3P  PLANTA ALTELL - FACHADA NOR",
-        "duration": "04:00:00",
-        "securityMargin": "00:10:00",
-        "startTime": "2024-01-01T08:00:00",         
-        "endTime": "2024-01-01T12:00:00",                 
-        "routingOperationId": "cd2f1a92-7312-4b3d-41ba-08dca71daa56",
-        "warehouseId": "04cdd84e-fca9-4f7a-9430-08dc83ccd0d3",
         "workerTimes": [
             {
                 "workerId": "0199a29a-cea2-4dbd-d6ec-08dc97981923",
@@ -448,37 +434,35 @@ def sync_productionOrdersKKKK(dbOrigin, mycursor, headers, data: dict, endPoint,
 
     dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
 
-    # We need the project details
-    ot = data['correlationId'][3:8]
-    get_req = requests.get(URL_API + URL_PROJECTS + "/search" + f"?search={str(ot)}", headers=headers,
+    # We need the production order GUID
+    ot = data['correlationId'][3]
+    get_req = requests.get(URL_API + URL_PRODUCTIONORDERS + "/search" + f"?search={str(ot)}", headers=headers,
                            verify=False, timeout=CONN_TIMEOUT)
     if get_req.status_code == 200:            
-        item = next((i for i in get_req.json() if i["code"].casefold() == "ot/" + str(ot).casefold()), None)
+        item = next((i for i in get_req.json() if i["code"].casefold() == str(ot).casefold()), None)
 
         if item is None:
-            message = 'Error project not found:' + str(ot)
+            message = 'Error production order not found:' + str(ot)
             save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
             logging.error(message)
             return  
         else:
-            data['projectId'] = item["id"]
-            data['projectWBSId'] = item["wbsId"]
+            p_prodOrder_id = item["id"]
 
-            # Synchronize production order
-            p_prodOrder_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="number", filter_value=str(data['documentNumber']).strip(), endPoint=endPoint, origin=origin, helper="")
+            # We need the operation GUID
+            ot = data['correlationId']
+            get_req = requests.get(URL_API + URL_PRODUCTIONORDERS + "/" + str(p_prodOrder_id) + URL_OPERATIONS, headers=headers,
+                                   verify=False, timeout=CONN_TIMEOUT)
 
-            if _has_been_posted is not None and _has_been_posted is True:
+            p_operation_id = get_req.json()['id']
 
-                p_operation_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_PRODUCTIONORDERS + '/' + str(p_prodOrder_id) + URL_OPERATIONS, correlation_id=data['correlationId'], producerData=dataAux, data=data, filter_name="productionOrderId", filter_value=str(p_prodOrder_id).strip(), endPoint=endPoint, origin=origin, helper="")
+            # Sync worker time
+            workerTimes = data['workerTimes']   
+            for workerTime in workerTimes:
+                workerTime['productionOrderId'] = str(p_prodOrder_id)
+                workerTime['productionOrderOperationId'] = str(p_operation_id)
+                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['correlationId'], producerData=workerTime, data=workerTime, filter_name="productionOrderId", filter_value=workerTime['productionOrderId'], endPoint=endPoint, origin=origin, helper="")
 
-                if _has_been_posted is not None and _has_been_posted is True:
-                    # Sync worker time
-                    workerTimes = data['workerTimes']   
-                    for workerTime in workerTimes:
-                        workerTime['productionOrderId'] = str(p_prodOrder_id)
-                        workerTime['productionOrderOperationId'] = str(p_operation_id)
-                        _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['correlationId'], producerData=workerTime, data=workerTime, filter_name="productionOrderId", filter_value=workerTime['productionOrderId'], endPoint=endPoint, origin=origin, helper="")
-        
 ####################################################################################################
 
 def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
@@ -1740,12 +1724,24 @@ def main():
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_PRODUCTIONORDERS                    
                     sync_productionOrders(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
+                if data['queueType'] == "PRODUCTIONORDERS_WORKINGTIMES_NONO":
+                    GLOBAL_ENDPOINT = 'Production Orders ERP GF'
+                    GLOBAL_ORIGIN = 'Access-Nono'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_WORKERTIMETICKETS                    
+                    sync_workingTimes(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
                 if data['queueType'] == "PRODUCTIONORDERS_PRODUCTIONORDERS_SESAME":
                     GLOBAL_ENDPOINT = 'Production Orders ERP GF'
                     GLOBAL_ORIGIN = 'Sesame'
                     GLOBAL_CORRELATIONID = data['correlationId']
                     GLOBAL_CALLTYPE = URL_PRODUCTIONORDERS                    
                     sync_productionOrders(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
+                if data['queueType'] == "PRODUCTIONORDERS_WORKINGTIMES_SESAME":
+                    GLOBAL_ENDPOINT = 'Production Orders ERP GF'
+                    GLOBAL_ORIGIN = 'Sesame'
+                    GLOBAL_CORRELATIONID = data['correlationId']
+                    GLOBAL_CALLTYPE = URL_WORKERTIMETICKETS                    
+                    sync_workingTimes(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
