@@ -424,6 +424,8 @@ def sync_workingTimes(dbOrigin, mycursor, headers, data: dict, endPoint, origin)
                 "workerId": "0199a29a-cea2-4dbd-d6ec-08dc97981923",
                 "startDate": "2023-02-17T00:00:00",
                 "totalTime": "07:00:00",
+                "productionOrderId": "763ce2e4-f7a0-466f-9edc-08dcc020a88b",
+                "productionOrderOperationId": "76244fee-6e25-4fd5-8eb3-08dccc09302b",
                 "correlationId": "1"
             }
         ],
@@ -432,36 +434,10 @@ def sync_workingTimes(dbOrigin, mycursor, headers, data: dict, endPoint, origin)
     :return None
     """
 
-    dataAux = data.copy() # copy of the original data received from producer. I need it for hash purposes cos I will make changes on it.
-
-    # We need the production order GUID
-    ot = data['correlationId'][3]
-    get_req = requests.get(URL_API + URL_PRODUCTIONORDERS + "/search" + f"?search={str(ot)}", headers=headers,
-                           verify=False, timeout=CONN_TIMEOUT)
-    if get_req.status_code == 200:            
-        item = next((i for i in get_req.json() if i["code"].casefold() == str(ot).casefold()), None)
-
-        if item is None:
-            message = 'Error production order not found:' + str(ot)
-            save_log_database(dbOrigin, mycursor, endPoint, message, "ERROR")
-            logging.error(message)
-            return  
-        else:
-            p_prodOrder_id = item["id"]
-
-            # We need the operation GUID
-            ot = data['correlationId']
-            get_req = requests.get(URL_API + URL_PRODUCTIONORDERS + "/" + str(p_prodOrder_id) + URL_OPERATIONS, headers=headers,
-                                   verify=False, timeout=CONN_TIMEOUT)
-
-            p_operation_id = get_req.json()['id']
-
-            # Sync worker time
-            workerTimes = data['workerTimes']   
-            for workerTime in workerTimes:
-                workerTime['productionOrderId'] = str(p_prodOrder_id)
-                workerTime['productionOrderOperationId'] = str(p_operation_id)
-                _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['correlationId'], producerData=workerTime, data=workerTime, filter_name="productionOrderId", filter_value=workerTime['productionOrderId'], endPoint=endPoint, origin=origin, helper="")
+    # Sync worker time
+    workerTimes = data['workerTimes']   
+    for workerTime in workerTimes:
+        _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['correlationId'], producerData=data, data=workerTime, filter_name="productionOrderId", filter_value=workerTime['productionOrderId'], endPoint=endPoint, origin=origin, helper="")
 
 ####################################################################################################
 
