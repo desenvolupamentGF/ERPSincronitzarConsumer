@@ -1755,7 +1755,7 @@ def main():
             message = '   Unexpected error processing queued messages: ' + str(e)[0:1500] + ". GLOBAL_CORRELATIONID=" + str(GLOBAL_CORRELATIONID) + " GLOBAL_CALLTYPE=" + str(GLOBAL_CALLTYPE) + " GLOBAL_ENDPOINT=" + str(GLOBAL_ENDPOINT) + " GLOBAL_ORIGIN=" + str(GLOBAL_ORIGIN)
             save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
             logging.error(message)
-            send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
+            #send_email("ERPSincronitzarConsumer", ENVIRONMENT, now, datetime.datetime.now(), "ERROR")            
 
             reconnect = False
             while not reconnect:
@@ -1769,7 +1769,7 @@ def main():
                     myRabbit = RabbitPublisherService(RABBIT_URL, RABBIT_PORT, RABBIT_QUEUE)
                     reconnect = True
                     logging.info('   Successfully reconnected. Execution continues...')
-                    send_email("ERPSincronitzarConsumer - SUCCESSFULLY RECONNECTED", ENVIRONMENT, now, datetime.datetime.now(), "OK")  
+                    #send_email("ERPSincronitzarConsumer - SUCCESSFULLY RECONNECTED", ENVIRONMENT, now, datetime.datetime.now(), "OK")  
                 except Exception as e:
                     message = '   Unexpected error reconnecting to database&rabbit: ' + str(e)[0:1500]
                     save_log_database(dbOrigin, mycursor, 'ERPSincronitzarConsumer', message, "ERROR")
