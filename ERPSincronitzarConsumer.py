@@ -419,27 +419,19 @@ def sync_workingTimes(dbOrigin, mycursor, headers, data: dict, endPoint, origin)
     logging.info('New message: workerTime - ' + str(data['correlationId']))
     """
     :param data: dict -> {
-        "workerTimes": [
-            {
-                "workerId": "0199a29a-cea2-4dbd-d6ec-08dc97981923",
-                "startDate": "2023-02-17T00:00:00",
-                "totalTime": "07:00:00",
-                "productionOrderId": "763ce2e4-f7a0-466f-9edc-08dcc020a88b",
-                "productionOrderOperationId": "76244fee-6e25-4fd5-8eb3-08dccc09302b",
-                "correlationId": "1"
-            }
-        ],
-        "correlationId": "OF/14644A28"
+        "of": "OF/14644A28",
+        "workerId": "0199a29a-cea2-4dbd-d6ec-08dc97981923",
+        "startDate": "2023-02-17T00:00:00",
+        "totalTime": "07:00:00",
+        "productionOrderId": "763ce2e4-f7a0-466f-9edc-08dcc020a88b",
+        "productionOrderOperationId": "76244fee-6e25-4fd5-8eb3-08dccc09302b",
+        "correlationId": "1"
     }
     :return None
     """
 
     # Sync worker time
-    workerTimes = data['workerTimes']   
-    for workerTime in workerTimes:
-        _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=workerTime['correlationId'], producerData=data, data=workerTime, filter_name="productionOrderId", filter_value=workerTime['productionOrderId'], endPoint=endPoint, origin=origin, helper="")
-
-####################################################################################################
+    _glam_cost_id, _has_been_posted = synch_by_database(dbOrigin, mycursor, headers, url=URL_WORKERTIMETICKETS, correlation_id=data['correlationId'], producerData=data, data=data, filter_name="productionOrderId", filter_value=data['productionOrderId'], endPoint=endPoint, origin=origin, helper="")
 
 def sync_treballadors(dbOrigin, mycursor, headers, maskValue, data: dict, endPoint, origin):
     logging.info('New message: treballador - ' + str(data['correlationId']))
