@@ -1571,6 +1571,9 @@ def main():
 
             def callback_message(ch, method, properties, body):
 
+                # So rabbit gets a confirmation that previous message has been processed correctly before sending next one
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
                 global GLOBAL_ENDPOINT, GLOBAL_ORIGIN, GLOBAL_CORRELATIONID, GLOBAL_CALLTYPE
 
                 # Calculate access token and header for the request
@@ -1712,6 +1715,7 @@ def main():
                     sync_workingTimes(dbOrigin, mycursor, headers, data, GLOBAL_ENDPOINT, GLOBAL_ORIGIN)
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
+            myRabbit.channel.basic_qos(prefetch_count=1)
             myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
             myRabbit.channel.start_consuming()
         
