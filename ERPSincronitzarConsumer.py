@@ -116,9 +116,13 @@ if ENVIRONMENT == 1:
 
 # Global values
 global GLOBAL_ENDPOINT
+GLOBAL_ENDPOINT = ""
 global GLOBAL_ORIGIN
+GLOBAL_ORIGIN = ""
 global GLOBAL_CORRELATIONID
+GLOBAL_CORRELATIONID = ""
 global GLOBAL_CALLTYPE
+GLOBAL_CALLTYPE = ""
 
 ####################################################################################################
 
