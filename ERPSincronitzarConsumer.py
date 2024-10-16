@@ -1720,7 +1720,7 @@ def main():
 
             myRabbit.channel.queue_declare(queue=myRabbit.queue_name)
             myRabbit.channel.basic_qos(prefetch_count=1)
-            myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=True)
+            myRabbit.channel.basic_consume(queue=myRabbit.queue_name, on_message_callback=callback_message, auto_ack=False)
             myRabbit.channel.start_consuming()
         
         except Exception as e:
